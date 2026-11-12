@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared settings and references: ../Directory.Build.props -->
+  <PropertyGroup>
+    <AssemblyName>OUAKModAPI</AssemblyName>
+    <RootNamespace>OUAKModAPI</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572</NoWarn>
+  </PropertyGroup>
+  <!-- ImGui.NET and its native cimgui.dll go to UserLibs (MelonLoader loads libraries from there). -->
+  <Target Name="CopyImGui" AfterTargets="Build" Condition="'$(NoInstall)' != 'true'">
+    <ItemGroup>
+      <ImGuiLibs Include="$(NuGetPackageRoot)imgui.net\1.91.6.1\lib\net6.0\ImGui.NET.dll;$(NuGetPackageRoot)imgui.net\1.91.6.1\runtimes\win-x64\native\cimgui.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ImGuiLibs)" DestinationFolder="$(GameDir)UserLibs" SkipUnchangedFiles="true" Retries="0" ContinueOnError="true" />
+  </Target>
+</Project>

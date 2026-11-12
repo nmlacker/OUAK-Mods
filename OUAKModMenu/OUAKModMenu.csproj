@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared settings and references: ../Directory.Build.props -->
+  <PropertyGroup>
+    <AssemblyName>OUAKModMenu</AssemblyName>
+    <RootNamespace>OUAKModMenu</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- KatamariBall / multiplayer code moved out of this single-player menu (kept for the Multiplayer mod to copy). -->
+    <Compile Remove="Moved\**" />
+    <None Remove="Moved\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

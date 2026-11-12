@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    OUAK Song Selector: named playlists of the game's own music and your own WAV files, for story stages and the
+    Plaza, managed from a tab in the mod window (Right Shift). Built on the OUAK Modding API.
+    Shared settings: ../Directory.Build.props. Installs to Mods (build with -p:NoInstall=true to skip that).
+  -->
+  <PropertyGroup>
+    <AssemblyName>OUAKSongSelector</AssemblyName>
+    <RootNamespace>OUAKSongSelector</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

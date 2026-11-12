@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared settings and references: ../Directory.Build.props -->
+  <PropertyGroup>
+    <AssemblyName>OUAKMultiplayer</AssemblyName>
+    <RootNamespace>OUAKMultiplayer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

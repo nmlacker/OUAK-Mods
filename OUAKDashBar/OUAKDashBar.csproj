@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    OUAK Dash Bar: shows the prince's dash stamina in story stages on the game's own unused dash gauge
+    (UIMultiDashGauge), with a countdown to when the dash starts regenerating. Built on the OUAK Modding API.
+    Shared settings: ../Directory.Build.props. Installs to Mods (build with -p:NoInstall=true to skip that).
+  -->
+  <PropertyGroup>
+    <AssemblyName>OUAKDashBar</AssemblyName>
+    <RootNamespace>OUAKDashBar</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

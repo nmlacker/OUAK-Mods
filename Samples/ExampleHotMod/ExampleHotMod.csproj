@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    A hot mod: builds straight into UserData\OUAKModAPI\HotMods, and the running game reloads it every time you
+    build (no restart). Not installed by default (so building the whole solution doesn't add a demo tab to the
+    game): build it with -p:NoInstall=false. Shared settings: ../../Directory.Build.props.
+  -->
+  <PropertyGroup>
+    <AssemblyName>ExampleHotMod</AssemblyName>
+    <RootNamespace>ExampleHotMod</RootNamespace>
+    <InstallDir>$(GameDir)UserData\OUAKModAPI\HotMods</InstallDir>
+    <NoInstall Condition="'$(NoInstall)' == ''">true</NoInstall>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    A regular MelonLoader mod built on the OUAK Modding API. Shared settings: ../../Directory.Build.props.
+    Not installed by default; build with -p:NoInstall=false to copy it to Mods.
+  -->
+  <PropertyGroup>
+    <AssemblyName>ExampleMod</AssemblyName>
+    <RootNamespace>ExampleMod</RootNamespace>
+    <NoInstall Condition="'$(NoInstall)' == ''">true</NoInstall>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

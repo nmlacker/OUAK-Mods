@@ -1,0 +1,33 @@
+# Source only. Everything below can be rebuilt or is not ours to upload.
+
+# Build output (rebuild with: dotnet build OUAK.sln -c Release)
+bin/
+obj/
+
+# Packaged builds and anything compiled
+dist/
+*.dll
+*.pdb
+*.exe
+*.zip
+
+# Not a custom mod: the Dear ImGui test sample stays local
+Samples/ImGuiTest/
+# Cache that tools/names.ps1 generates from the game's assemblies (rebuilt on first use)
+tools/methodmap.tsv
+#Game bug research
+SpeedrunBugResearch/tests/results/
+
+# Editor and OS files
+.vs/
+.idea/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+
+# Local only: internal notes and tools with paths on this computer (kept out of the public repo, 2026-11-12)
+HANDOFF.md
+PROJECT_NOTES.md
+SpeedrunBugResearch/tests/run_dashtest.ps1
+_local-archive/

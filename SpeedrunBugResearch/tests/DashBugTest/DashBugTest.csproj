@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- TEST HARNESS ONLY (speedrun bug research, not a mod to install): a hot mod that reproduces the dash bug in a story stage by
+       pressing L2 and wiggling the sticks through the game's own pad buffers, and logs the dash and stamina timers
+       every frame. run_dashtest.ps1 copies it into UserData\OUAKModAPI\HotMods for one launch and removes it after.
+       Shared settings: ../../../Directory.Build.props. -->
+  <PropertyGroup>
+    <AssemblyName>DashBugTest</AssemblyName>
+    <RootNamespace>DashBugTest</RootNamespace>
+    <NoInstall>true</NoInstall>
+    <OutputPath>bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(GameDir)Mods\OUAKModAPI.dll" Private="false" />
+  </ItemGroup>
+</Project>

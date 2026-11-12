@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    OUAK Updater: the OUAK Modding API's auto-updater. A MelonLoader *plugin* (Plugins/), not a mod, because it has to
+    replace the mods' DLLs before MelonLoader loads them: a mod can't swap DLLs that are already loaded and locked.
+    Shared settings: ../Directory.Build.props. Installs to Plugins (build with -p:NoInstall=true to skip that).
+  -->
+  <PropertyGroup>
+    <AssemblyName>OUAKUpdater</AssemblyName>
+    <RootNamespace>OUAKUpdater</RootNamespace>
+    <InstallDir>$(GameDir)Plugins</InstallDir>
+  </PropertyGroup>
+</Project>
