@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Il2Cpp;
+using Il2CppApp.KatamariSin;
 using MelonLoader;
 using UnityEngine;
 using OUAKModAPI;
@@ -103,6 +105,35 @@ namespace OUAKMultiplayer
             Enabled && NetSession.Connected && Messages.Count > 0 && !Chat.IsOpen && !ModMenu.IsOpen && !Prompt.Active &&
             !TextInput.IsTyping && !GameEvents.Paused;
 
+        /// <summary>How long D-pad down must be held to open the list.</summary>
+        public const float HoldToOpen = 0.4f;
+        private static float _downSince = -1f;
+        private static bool _downUsed;
+
+        /// <summary>
+        /// You're walking or rolling, not in one of the game's menus: in a plaza its own state says walking
+        /// (SelectHirobaController SELECTHIROBA, UI MAINGAME); in a stage the game is running; on the ship (no menu
+        /// state found yet) only the hold protects the menus.
+        /// </summary>
+        public static bool FreeToMove()
+        {
+            try
+            {
+                var gm = GameRefs.Main;
+                if (gm != null) return gm.IsGameRunning && !GameEvents.Paused;
+                int hub = HubPresence.HubKey;
+                if (hub >= 3000 && hub < HubPresence.ShipKey)
+                {
+                    var mgr = SingletonMonoBehaviour<SelectHirobaManager>.instance;
+                    if (mgr == null) return false;
+                    return mgr._hirobaController._gameState == SelectHirobaController.GameState.SELECTHIROBA
+                           && mgr._uIController._uiStaus == SelectHirobaUIController.UI_STATUS.MAINGAME;
+                }
+                return hub == HubPresence.ShipKey;
+            }
+            catch { return false; }
+        }
+
         public static void Open()
         {
             _open = true;
@@ -139,8 +170,16 @@ namespace OUAKMultiplayer
             }
             if (!_open)
             {
-                if (Pad.DownPressed && CanOpen)
+                // Held, not tapped (a tap of D-pad down moves through the game's menus), and only while you're free to move
+                // (the user, 2026-11-12: "quick chat gets in the way of selecting interfaces").
+                bool held = false;
+                try { var pad = UnityEngine.InputSystem.Gamepad.current; held = pad != null && pad.dpad.down.isPressed; } catch { }
+                if (!held) { _downSince = -1f; _downUsed = false; return; }
+                float t0 = Time.unscaledTime;
+                if (_downSince < 0f) _downSince = t0;
+                if (t0 - _downSince >= HoldToOpen && !_downUsed && CanOpen && FreeToMove())
                 {
+                    _downUsed = true;
                     Open();
                     GameInput.BlockThisFrame("quick chat");
                 }

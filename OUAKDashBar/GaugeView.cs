@@ -50,6 +50,41 @@ namespace OUAKDashBar
         private static int _homeIndex;
         private static bool _hideInMessages;
 
+        // Out of the way of other HUD at the bottom of the screen: the game's own sub-challenge counter and freebie slot,
+        // and other mods' HUD (the API's HudSpace, e.g. OUAK Multiplayer's player bar). The gauge (with its countdown)
+        // moves to the nearest free spot, in screen pixels from the game's own place (x right, y up).
+        private static Vector2 _homePos, _offset, _target, _pending;
+        private static float _scale = 1f, _targetScale = 1f, _pendingScale = 1f;
+        private static string _dock = "home", _pendingDock = "home";
+        private static int _pendingFrames;
+        private static float _pendingSince;
+        /// <summary>Other mods' HUD: the API's HudSpace claims (IMGUI screen rects), set by the mod.</summary>
+        internal static Func<IEnumerable<(string owner, Rect rect)>> OtherHud;
+        /// <summary>The gap kept from other HUD, in screen pixels at 1080p (scaled with the screen).</summary>
+        internal const float LiftGap = 6f;
+        /// <summary>The highest the bar's top may go, as a share of the screen height (it stays in the bottom of the screen).</summary>
+        internal const float MaxTop = 0.42f;
+        /// <summary>A better (less moved) spot must stay free this many frames and this long before the bar moves back.</summary>
+        internal const int HoldFrames = 3;
+        internal const float HoldTime = 0.5f;
+        /// <summary>The smallest the bar is drawn beside the freebie slot (share of its size).</summary>
+        internal const float MinScale = 0.55f;
+        /// <summary>Where the bar is: "home", "up" (above what's under it) or "beside the freebie slot"; and its scale.</summary>
+        internal static string Dock => _dock;
+        internal static float Scale => _scale;
+        /// <summary>How far the gauge is moved now / wants to be, in screen pixels (for the test).</summary>
+        internal static float Lift => _offset.y;
+        internal static float LiftTarget => _target.y;
+        internal static float Shift => _offset.x;
+        internal static float ShiftTarget => _target.x;
+        /// <summary>The HUD the bar keeps clear of this frame (bottom-up screen rects), for the test and the log.</summary>
+        internal static readonly List<(string name, Rect rect)> Obstacles = new();
+        /// <summary>Times the bar's target place changed, for the test.</summary>
+        internal static int LiftChanges { get; private set; }
+        /// <summary>Times the bar went home and away again within a second (a dip), for the test.</summary>
+        internal static int Dips { get; private set; }
+        private static float _wentHomeAt = -10f;
+
         /// <summary>True while the gauge is on the mod's overlay canvas.</summary>
         internal static bool OnTop => _gauge != null && _onTop != null && _gauge.transform.parent != null && _gauge.transform.parent.Pointer == _onTop.transform.Pointer;
         /// <summary>Where the game's own canvas put the bar's frame, in screen pixels (measured before moving it).</summary>
@@ -83,19 +118,15 @@ namespace OUAKDashBar
                     var mgr = GameRefs.Multiplay;
                     if (mgr != null && mgr.isGamePause) return false;
                 }
-                else if (!Katamari.Playing || !gm.StartMessageDone) return false;
+                // A story stage: all the time you're in it (the user's choice, 2026-11-12), also while the King speaks (his
+                // opening talk and his remarks), until the stage ends. Not in the pause menu or cutscenes (below).
+                else if (!gm.PlayerInitiated || gm._isInClearDemo || gm._isInGameOver) return false;
                 if (ui.PauseObjs != null && ui.PauseObjs.isOpend) return false;
                 if (ui.DemoObjs != null && ui.DemoObjs.isOpend) return false;
                 if (ui.Layer00 != null && !ui.Layer00.gameObject.activeInHierarchy) return false;
                 // The HUD canvas itself switched off, or its camera: the game's HUD isn't drawn, so neither is the bar.
                 if (_hudCanvas != null && (!_hudCanvas.enabled || (_hudCanvas.renderMode != RenderMode.ScreenSpaceOverlay
                     && _hudCanvas.worldCamera != null && !_hudCanvas.worldCamera.isActiveAndEnabled))) return false;
-                // A message window that would end up under the bar (it's on a canvas below ours): out of its way.
-                if (_hideInMessages)
-                {
-                    var gui = SingletonMonoBehaviour<GlobalUIController>.Instance;
-                    if (gui != null && gui.IsInMessage) return false;
-                }
                 return true;
             }
             catch { return false; }
@@ -116,6 +147,7 @@ namespace OUAKDashBar
             if (!visible) { SetVisible(false); return; }
             SetVisible(true);
             SyncScaler();
+            PlaceAroundOthers(gm);
 
             // Unlimited dash: the game's own Max (rainbow) look, which its battle code shows for unlimited dash
             // (ResetOujiDashMultiCoolTime). The bar still shows the real stamina: full under the API's free unlimited dash
@@ -197,6 +229,7 @@ namespace OUAKDashBar
                     if (_label != null) UnityEngine.Object.Destroy(_label.transform.parent.gameObject);
                     if (_home != null && OnTop)
                     {
+                        SetOffset(Vector2.zero);
                         _gauge.transform.SetParent(_home, false);
                         _gauge.transform.SetSiblingIndex(_homeIndex);
                     }
@@ -207,6 +240,8 @@ namespace OUAKDashBar
             _gauge = null; _label = _shadow = null; _icon = _iconMax = null;
             _onTop = null; _hudCanvas = null; _hudScaler = _topScaler = null; _home = null; _hideInMessages = false;
             _shown = false; _lastText = null;
+            _offset = _target = _pending = Vector2.zero; _pendingFrames = 0;
+            _scale = _targetScale = _pendingScale = 1f; _dock = _pendingDock = "home";
         }
 
         private static void SetVisible(bool on)
@@ -277,6 +312,10 @@ namespace OUAKDashBar
             _home = home;
             _homeIndex = g.transform.GetSiblingIndex();
             g.transform.SetParent(_onTop.transform, false);   // keeps its anchors and position inside a same-sized canvas
+            var grt = g.transform.TryCast<RectTransform>();
+            _homePos = grt != null ? grt.anchoredPosition : Vector2.zero;
+            _offset = _target = _pending = Vector2.zero; _pendingFrames = 0;
+            _scale = _targetScale = _pendingScale = 1f; _dock = _pendingDock = "home";
         }
 
         // The HUD's scaler settings (the game's display manager may change them, e.g. for the window's shape).
@@ -353,8 +392,243 @@ namespace OUAKDashBar
         internal static void SetOnTop(bool on)
         {
             if (_gauge == null || _onTop == null || _home == null || OnTop == on) return;
+            if (!on) SetOffset(Vector2.zero);
             _gauge.transform.SetParent(on ? _onTop.transform : _home, false);
             if (!on) _gauge.transform.SetSiblingIndex(_homeIndex);
+        }
+
+        // The game's own HUD: whatever it draws in the bottom part of the screen (where the bar can go), one obstacle per HUD
+        // piece (each child of LAYER00 / LAYER01: the freebie slot, the stage's goal counter, the sub-challenge counter, the
+        // song title...), the union of its visible images and texts. Rescanned 10 times a second.
+        private static readonly List<(string name, Rect rect)> _gameHud = new();
+        private static float _nextScan;
+        // Where each piece was last seen and since when it hasn't moved: a piece only counts once it has stopped
+        // (measured: the freebie slot slides up from below the screen when you get a freebie, through the bar's place).
+        private static readonly Dictionary<string, (Rect rect, float since)> _pieceRest = new();
+        internal const float SettleTime = 0.6f;
+        // Pop-ups that come and go while you roll (the last-caught object's name, the song title) and the markers pointing at
+        // other princes (they sit at the screen edge whenever one is behind you; measured in battles and Target): not worth moving for.
+        private static readonly string[] Transient = { "MonoNameDisplay", "BGM", "SonarGuide" };
+        /// <summary>Frames each game HUD piece was in the way so far (name -> count), for the test's log.</summary>
+        internal static readonly Dictionary<string, int> SeenPieces = new();
+
+        private static void ScanGameHud(MainGameUIManager ui)
+        {
+            _gameHud.Clear();
+            if (ui == null) return;
+            float band = Screen.height * MaxTop, now = Time.unscaledTime;
+            var seen = new HashSet<string>();
+            void Piece(Transform piece, Canvas canvas, string name)
+            {
+                if (piece == null || !piece.gameObject.activeInHierarchy) return;
+                if (_gauge != null && piece.Pointer == _gauge.transform.Pointer) return;
+                bool any = false;
+                Rect u = default;
+                foreach (var gr in piece.GetComponentsInChildren<Graphic>(false))
+                {
+                    if (gr == null || !gr.enabled || gr.color.a < 0.05f) continue;
+                    if (gr.canvasRenderer.GetInheritedAlpha() < 0.05f) continue;   // canvas groups faded out
+                    var tmp = gr.TryCast<TMP_Text>();
+                    if (tmp != null && string.IsNullOrWhiteSpace(tmp.text)) continue;
+                    var r = ScreenRect(gr.rectTransform, canvas);
+                    if (r.width < 2f || r.height < 2f || r.yMin > band) continue;
+                    if (r.yMax <= 0f || r.xMax <= 0f || r.xMin >= Screen.width) continue;   // off screen (parked below it)
+                    if (r.width > Screen.width * 0.9f && r.height > Screen.height * 0.5f) continue;   // full-screen fades and frames
+                    u = any ? Rect.MinMaxRect(Mathf.Min(u.xMin, r.xMin), Mathf.Min(u.yMin, r.yMin), Mathf.Max(u.xMax, r.xMax), Mathf.Max(u.yMax, r.yMax)) : r;
+                    any = true;
+                }
+                if (any) Settled(name, u);
+            }
+            void Settled(string name, Rect u)
+            {
+                seen.Add(name);
+                if (!_pieceRest.TryGetValue(name, out var rest) || Mathf.Abs(rest.rect.x - u.x) > 2f || Mathf.Abs(rest.rect.y - u.y) > 2f
+                    || Mathf.Abs(rest.rect.width - u.width) > 2f || Mathf.Abs(rest.rect.height - u.height) > 2f)
+                    rest = (u, now);
+                _pieceRest[name] = (u, rest.since);
+                if (now - rest.since < SettleTime) return;   // still moving
+                _gameHud.Add((name, u));
+                SeenPieces[name] = SeenPieces.TryGetValue(name, out int n) ? n + 1 : 1;
+            }
+            foreach (var layer in new[] { ui.Layer00, ui.Layer01 })
+            {
+                if (layer == null || !layer.gameObject.activeInHierarchy) continue;
+                var canvas = layer.GetComponent<Canvas>();
+                if (canvas != null && !canvas.isRootCanvas) canvas = canvas.rootCanvas;
+                for (int i = 0; i < layer.childCount; i++)
+                {
+                    var piece = layer.GetChild(i);
+                    if (piece != null && Array.IndexOf(Transient, piece.name) < 0) Piece(piece, canvas, $"the game's {piece.name}");
+                }
+            }
+            // The prince's picture at the bottom right: a separate camera's render, placed by UIOujiBackLoader._myRect.
+            try
+            {
+                var my = ui.OujiBackLoader != null ? ui.OujiBackLoader._myRect : null;
+                if (my != null && my.gameObject.activeInHierarchy)
+                {
+                    // The render area is wider than what's drawn in it: measured at 2560x1440, the area spans x 1827..2627 and
+                    // the prince with his backdrop disc starts at about x 2050 (28% across it).
+                    var r = PieceRect(my);
+                    r = Rect.MinMaxRect(r.xMin + r.width * 0.28f, r.yMin, r.xMax, r.yMax);
+                    if (r.width > 2f && r.width < Screen.width * 0.4f && r.yMin < band && r.yMax > 0f) Settled("the game's prince picture", r);
+                }
+            }
+            catch { }
+            foreach (var k in _pieceRest.Keys.Where(k => !seen.Contains(k)).ToList()) _pieceRest.Remove(k);
+        }
+
+        private static void CollectObstacles(MainGameManager gm)
+        {
+            Obstacles.Clear();
+            try
+            {
+                if (OtherHud != null)
+                    foreach (var (owner, r) in OtherHud())
+                        if (owner != DashBarMod.HudOwner) Obstacles.Add((owner, new Rect(r.x, Screen.height - r.yMax, r.width, r.height)));
+            }
+            catch (Exception e) { DashBarMod.Log.Warn("HUD space: " + e.Message + " (not followed any more)"); OtherHud = null; }
+            float t = Time.unscaledTime;
+            if (t >= _nextScan)
+            {
+                _nextScan = t + 0.1f;
+                try { ScanGameHud(gm?.MainUI); }
+                catch (Exception e) { DashBarMod.Log.Warn("Game HUD scan: " + e.Message); _gameHud.Clear(); _nextScan = t + 5f; }
+            }
+            Obstacles.AddRange(_gameHud);
+        }
+
+        private static Rect PieceRect(RectTransform rt)
+        {
+            if (rt == null) return default;
+            var c = rt.GetComponentInParent<Canvas>();
+            if (c != null && !c.isRootCanvas) c = c.rootCanvas;
+            return ScreenRect(rt, c);
+        }
+
+        // The bar's footprint at the game's own place and size: its frame and the countdown's box.
+        private static Rect HomeFootprint()
+        {
+            Rect frame = HomeScreenRect, label = LabelScreenRect();
+            if (label.width > 0f && _scale > 0f)
+            {
+                // Back to the home place and size: the label scales and moves with the gauge.
+                var c = new Vector2(Screen.width / 2f, Screen.height / 2f);
+                Vector2 lmin = (label.min - _offset - c) / _scale + c, lmax = (label.max - _offset - c) / _scale + c;
+                label = Rect.MinMaxRect(lmin.x, lmin.y, lmax.x, lmax.y);
+            }
+            return label.width > 0f ? Rect.MinMaxRect(frame.xMin, Mathf.Min(frame.yMin, label.yMin), Mathf.Max(frame.xMax, label.xMax), Mathf.Max(frame.yMax, label.yMax)) : frame;
+        }
+
+        // The footprint for a placement: the root is scaled about the screen centre, then moved by `offset`.
+        private static Rect Placed(Rect home, Vector2 offset, float scale)
+        {
+            var c = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            Vector2 min = c + (home.min - c) * scale + offset, max = c + (home.max - c) * scale + offset;
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        }
+
+        private static bool Clear(Rect r, float gap, out float overlap)
+        {
+            overlap = 0f;
+            bool on = r.xMin >= gap && r.xMax <= Screen.width - gap && r.yMin >= 0f && r.yMax <= Screen.height * MaxTop;
+            foreach (var (_, o) in Obstacles)
+            {
+                float w = Mathf.Min(r.xMax, o.xMax + gap) - Mathf.Max(r.xMin, o.xMin - gap), h = Mathf.Min(r.yMax, o.yMax + gap) - Mathf.Max(r.yMin, o.yMin - gap);
+                if (w > 0f && h > 0f) overlap += w * h;
+            }
+            return on && overlap <= 0f;
+        }
+
+        // Three places, in order: the game's own; straight up above what's under it (a player bar, the goal counter); beside
+        // the freebie slot, on its right at its height, drawn smaller if that's what it takes to fit before the next thing.
+        // When none is free: whichever of them covers the least.
+        private static (string dock, Vector2 offset, float scale) ChooseDock(Rect home, float gap)
+        {
+            var cands = new List<(string, Vector2, float)> { ("home", Vector2.zero, 1f) };
+            // Straight up: above everything that overlaps the bar's column at or under it.
+            float dy = 0f;
+            foreach (var (_, o) in Obstacles)
+                if (o.xMax > home.xMin - gap && o.xMin < home.xMax + gap && o.yMin < home.yMax + gap)
+                    dy = Mathf.Max(dy, o.yMax + gap - home.yMin);
+            if (dy > 0f) cands.Add(("up", new Vector2(0f, dy), 1f));
+            // Beside the freebie slot.
+            var slot = Obstacles.FirstOrDefault(o => o.name.Contains("ItemCanvas")).rect;
+            if (slot.width > 0f)
+            {
+                float x0 = slot.xMax + gap, limit = Screen.width - gap, h = home.height;
+                foreach (var (_, o) in Obstacles)
+                    if (o.xMin > slot.xMax && o.yMin < slot.center.y + h / 2f && o.yMax > slot.center.y - h / 2f) limit = Mathf.Min(limit, o.xMin - gap);
+                float sc = Mathf.Clamp((limit - x0) / home.width, MinScale, 1f);
+                var c = new Vector2(Screen.width / 2f, Screen.height / 2f);
+                var at = c + (home.min - c) * sc;   // the scaled footprint's corner before moving
+                cands.Add(("beside the freebie slot", new Vector2(x0 - at.x, slot.center.y - home.height * sc / 2f - at.y), sc));
+            }
+            (string, Vector2, float) best = cands[0];
+            float bestOverlap = float.MaxValue;
+            foreach (var cand in cands)
+            {
+                if (Clear(Placed(home, cand.Item2, cand.Item3), gap, out float overlap)) return cand;
+                if (overlap < bestOverlap) { bestOverlap = overlap; best = cand; }
+            }
+            return best;
+        }
+
+        private static void PlaceAroundOthers(MainGameManager gm)
+        {
+            if (!OnTop) { if (_offset != Vector2.zero || _scale != 1f) Apply(Vector2.zero, 1f); _target = Vector2.zero; _targetScale = 1f; _dock = "home"; return; }
+            CollectObstacles(gm);
+            float gap = LiftGap * Screen.height / 1080f, t = Time.unscaledTime;
+            var home = HomeFootprint();
+            var (dock, off, sc) = ChooseDock(home, gap);
+            bool currentClear = Clear(Placed(home, _target, _targetScale), gap, out _);
+            bool better = dock != _dock || (off - _target).sqrMagnitude > 4f || Mathf.Abs(sc - _targetScale) > 0.02f;
+            bool move = false;
+            if (better && !currentClear) move = true;   // its place got taken: move at once
+            else if (better)
+            {
+                // A better place (an earlier one in the order): only once it has stayed free a moment, so the bar doesn't
+                // jump around (and a claim that lapses for a frame, e.g. one long frame, doesn't make it dip).
+                if (dock != _pendingDock || (off - _pending).sqrMagnitude > 4f || _pendingFrames == 0) { _pendingDock = dock; _pending = off; _pendingScale = sc; _pendingSince = t; _pendingFrames = 0; }
+                if (++_pendingFrames >= HoldFrames && t - _pendingSince >= HoldTime) move = true;
+            }
+            else _pendingFrames = 0;
+            if (move)
+            {
+                LiftChanges++;
+                if (dock == "home") _wentHomeAt = t;
+                else if (_dock == "home" && t - _wentHomeAt < 1f) Dips++;
+                string around = string.Join(", ", Obstacles.Where(o => o.rect.Overlaps(home)).Select(o => o.name).Distinct());
+                DashBarMod.Log.Info(dock == "home"
+                    ? "Nothing in the way any more: back to where the game put it."
+                    : $"Keeping clear of {(around != "" ? around : "other HUD")}: {dock} ({off.x:0} px across, {off.y:0} px up, {sc * 100f:0}% size).");
+                _dock = dock; _target = off; _targetScale = sc; _pendingFrames = 0;
+            }
+            // Smoothed over at most 0.05 s per frame, so one long frame doesn't make it jump.
+            float k = 1f - Mathf.Exp(-12f * Mathf.Min(Time.unscaledDeltaTime, 0.05f));
+            bool done = (_target - _offset).sqrMagnitude < 0.25f && Mathf.Abs(_targetScale - _scale) < 0.002f;
+            var o2 = done ? _target : Vector2.Lerp(_offset, _target, k);
+            float s2 = done ? _targetScale : Mathf.Lerp(_scale, _targetScale, k);
+            if ((o2 - _offset).sqrMagnitude > 0f || s2 != _scale) Apply(o2, s2);
+        }
+
+        private static void SetOffset(Vector2 px) => Apply(px, 1f);
+
+        // Moves (screen px) and scales (about the screen centre) the gauge's root on the mod's canvas.
+        private static void Apply(Vector2 px, float scale)
+        {
+            _offset = px;
+            _scale = scale;
+            try
+            {
+                var rt = _gauge != null ? _gauge.transform.TryCast<RectTransform>() : null;
+                var c = _onTop != null ? _onTop.GetComponent<Canvas>() : null;
+                if (rt == null || c == null) return;
+                float k = c.scaleFactor > 0f ? c.scaleFactor : 1f;
+                rt.anchoredPosition = _homePos + px / k;
+                rt.localScale = new Vector3(scale, scale, 1f);
+            }
+            catch { }
         }
 
         private static Image FindImage(Transform root, string path)
@@ -385,7 +659,7 @@ namespace OUAKDashBar
             var hrt = holder.AddComponent<RectTransform>();
             hrt.pivot = new Vector2(0f, 0.5f);
             hrt.anchorMin = hrt.anchorMax = new Vector2(0.5f, 0.5f);
-            hrt.sizeDelta = new Vector2(220f, 90f);
+            hrt.sizeDelta = new Vector2(130f, 90f);   // room for "8.8" (the label never wraps)
             hrt.localScale = Vector3.one;
             // Its place next to the frame is set every frame it shows (PlaceLabel).
 

@@ -43,6 +43,7 @@ namespace OUAKModAPI
             Safe("training rules", () => TrainingRules.Init(HarmonyInstance));
             Safe("pause menu hooks", () => PauseMenu.Init(HarmonyInstance));
             Safe("cursor control", () => CursorControl.Init(HarmonyInstance, Prefs));
+            Safe("controller bindings", () => PadBindings.Init(HarmonyInstance, Category("OUAKModAPI_Pad", "OUAK controller bindings")));
             Safe("game modes", GameModes.Init);
             // Patches of broken/unused game features: all off until a mod enables them (GamePatches).
             Safe("patches", GamePatches.Init);
@@ -51,6 +52,8 @@ namespace OUAKModAPI
             ApiTab.Register();
             ApiSelfTest.CheckFlag();
             PatchTest.CheckFlag();
+            InputProbe.CheckFlag();
+            InputTest.CheckFlag();
             Log.Info($"OUAK Modding API {Version} ready. Press {Hotkeys.MenuKeyName} for the mod window.");
         }
 

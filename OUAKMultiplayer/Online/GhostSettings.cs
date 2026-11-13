@@ -11,6 +11,8 @@ namespace OUAKMultiplayer
     internal static class GhostSettings
     {
         public static bool Shown = true, Cousins = true, Stuck = true, Tags = true, HideBlocking = true, Bubbles = true;
+        /// <summary>Other players drawn see-through (the game's "ghost" look); off: solid, as in their own game (the user, 2026-11-12).</summary>
+        public static bool SeeThrough = true;
         public static int Near = 1, Far, Max;
 
         /// <summary>Vanish when the gap to you is under this many of your diameters (-1 = never, 0 = overlapping).</summary>
@@ -23,7 +25,7 @@ namespace OUAKMultiplayer
         public static readonly int[] MaxSteps = { 0, 3, 1 };
         public static readonly string[] MaxNames = { "all of them", "the 3 nearest", "the nearest one" };
 
-        private static MelonPreferences_Entry<bool> _shown, _cousins, _stuck, _tags, _blocking, _bubbles;
+        private static MelonPreferences_Entry<bool> _shown, _cousins, _stuck, _tags, _blocking, _bubbles, _seeThrough;
         private static MelonPreferences_Entry<int> _near, _far, _max;
 
         public static void Init(MelonPreferences_Category cat)
@@ -37,7 +39,9 @@ namespace OUAKMultiplayer
             _stuck = cat.CreateEntry("GhostsStuck", true, "Show what they've rolled up", "");
             _tags = cat.CreateEntry("GhostsTags", true, "Show name tags", "");
             _bubbles = cat.CreateEntry("GhostsBubbles", true, "Show chat bubbles", "What a player says in the chat shows over their cousin for a few seconds.");
+            _seeThrough = cat.CreateEntry("GhostsSeeThrough", true, "Other players see-through", "Draw other players' katamaris, cousins and rolled-up objects see-through (off: solid).");
             Shown = _shown.Value;
+            SeeThrough = _seeThrough.Value;
             Near = Clamp(_near.Value, NearSteps.Length);
             Far = Clamp(_far.Value, FarSteps.Length);
             Max = Clamp(_max.Value, MaxSteps.Length);
@@ -60,13 +64,14 @@ namespace OUAKMultiplayer
             _stuck.Value = Stuck;
             _tags.Value = Tags;
             _bubbles.Value = Bubbles;
+            _seeThrough.Value = SeeThrough;
             MelonPreferences.Save();
         }
 
         /// <summary>A value of the settings, to tell when one changed (the menu saves then).</summary>
         public static int Hash() =>
             (Shown ? 1 : 0) | (Cousins ? 2 : 0) | (Stuck ? 4 : 0) | (Tags ? 8 : 0) | (HideBlocking ? 16 : 0) | (Near << 5) | (Far << 9) | (Max << 13)
-            | (Bubbles ? 1 << 16 : 0);
+            | (Bubbles ? 1 << 16 : 0) | (SeeThrough ? 1 << 17 : 0);
 
         public static int Cycle(int value, int dir, int count) => ((value + dir) % count + count) % count;
 

@@ -51,6 +51,11 @@ namespace OUAKMultiplayer
                 harmony.Patch(AccessTools.Method(typeof(SelectHirobaKingController), nameof(SelectHirobaKingController.KingTalkSwich)),
                     prefix: new HarmonyMethod(AccessTools.Method(typeof(StageGate), nameof(BeforeKingTalk))));
                 _patched = true;
+                // The Super Stream (Rolling Live DLC) plaza has its own King (SelectHirobaAAKingController) with its own
+                // KingTalkSwich: the same case 99 starts the stage from the same _stages[_selectIndex], but the hook above
+                // never ran there, so DLC stages started without a vote (the user's playtest, 2026-11-12).
+                harmony.Patch(AccessTools.Method(typeof(SelectHirobaAAKingController), nameof(SelectHirobaAAKingController.KingTalkSwich)),
+                    prefix: new HarmonyMethod(AccessTools.Method(typeof(StageGate), nameof(BeforeKingTalk))));
             }
             catch (Exception e) { MelonLogger.Warning($"[Online] Stage votes from the King unavailable: {e.Message}"); }
         }

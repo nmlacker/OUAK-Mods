@@ -349,6 +349,18 @@ namespace OUAKMultiplayer
             catch { }
         }
 
+        /// <summary>
+        /// Rebuilds every ghost and hub cousin with the current look (the see-through setting changed): the core model,
+        /// stuck copies and cousins are made again with or without the see-through materials.
+        /// </summary>
+        public static void RebuildLooks()
+        {
+            Clear();
+            _coreTemplateMap = int.MinValue;
+            GhostLook.ForgetMaterials();
+            HubPresence.ClearAll();
+        }
+
         /// <summary>Every ghost's katamari and cousin switched off at once (a scene change: SceneSwitchGuard).</summary>
         public static void HideAllNow()
         {

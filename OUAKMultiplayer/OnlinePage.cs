@@ -599,6 +599,12 @@ namespace OUAKMultiplayer
             ImGui.Spacing();
             ImGui.Checkbox("Show other players' katamaris", ref GhostSettings.Shown);
             ImGui.BeginDisabled(!GhostSettings.Shown);
+            bool seeThrough = GhostSettings.SeeThrough;
+            if (ImGui.Checkbox("See-through (the ghost look); off: solid, as in their own game", ref seeThrough))
+            {
+                GhostSettings.SeeThrough = seeThrough;
+                Ghosts.RebuildLooks();
+            }
             IndexRow("Vanish when near you", GhostSettings.NearNames, ref GhostSettings.Near);
             IndexRow("Vanish when far away", GhostSettings.FarNames, ref GhostSettings.Far);
             IndexRow("Show at most", GhostSettings.MaxNames, ref GhostSettings.Max);

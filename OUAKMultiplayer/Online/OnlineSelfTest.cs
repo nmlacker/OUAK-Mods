@@ -458,10 +458,56 @@ namespace OUAKMultiplayer
                     var loader = UnityEngine.Object.FindObjectOfType<ModelLoader>();
                     if (_swapWay.StartsWith("the plaza") && loader != null) loader.PlayerNow = _walkBefore;
                     else if (GameRefs.Save != null && _saveBefore >= 0) GameRefs.Save.SetSelectPlayerId(_saveBefore);
-                    _step = 22;
+                    _step = 51;
                     _next = now + 4f;
                     return;
                 }
+                case 51:
+                    // Ghosts solid (the see-through setting off): the bot's cousin is rebuilt with its own, solid materials.
+                    _walkFree = QuickChat.FreeToMove();
+                    Log($"quick chat: free to move while walking in the plaza {_walkFree}");
+                    GhostSettings.SeeThrough = false;
+                    Ghosts.RebuildLooks();
+                    _step = 52;
+                    _next = now + 4f;
+                    return;
+                case 52:
+                {
+                    var cousin = HubPresence.CousinOf(NetSession.BotId);
+                    int solid = 0, seeThrough = 0;
+                    if (cousin != null)
+                        foreach (var r in cousin.GetComponentsInChildren<Renderer>(true))
+                            foreach (var m in r.sharedMaterials)
+                            {
+                                if (m == null) continue;
+                                // The mod's see-through look: queue 3001 and the cousin alpha (the game's own transparent parts don't count).
+                                bool ours = false;
+                                try { ours = m.renderQueue == 3001 && m.HasProperty("_BaseColor") && Mathf.Abs(m.GetColor("_BaseColor").a - GhostLook.CousinAlpha) < 0.01f; } catch { }
+                                if (ours) seeThrough++; else solid++;
+                            }
+                    _solidOk = cousin != null && solid > 0 && seeThrough == 0;
+                    _solidResult = $"cousin rebuilt {cousin != null}, materials solid {solid}, see-through {seeThrough}";
+                    Log($"{(_solidOk ? "PASS" : "FAIL")}: ghosts solid with see-through off: {_solidResult}");
+                    FrameCapture.Request("hub_solid");
+                    GhostSettings.SeeThrough = true;
+                    Ghosts.RebuildLooks();
+                    _step = 53;
+                    _next = now + 4f;
+                    return;
+                }
+                case 53:
+                    // This game stalls longer than the time-out (8 s): the bot must still be in the session after it.
+                    Log("stalling this game for 9.5 s");
+                    System.Threading.Thread.Sleep(9500);
+                    _step = 54;
+                    _next = Time.unscaledTime + 1f;
+                    return;
+                case 54:
+                    _stallOk = NetSession.Peers.ContainsKey(NetSession.BotId);
+                    Log($"{(_stallOk ? "PASS" : "FAIL")}: a 9.5 s stall of this game: the bot still in the session {_stallOk}");
+                    _step = 22;
+                    _next = now + 3f;
+                    return;
                 case 22:
                 {
                     Log("plaza, a moment later: " + HubPresence.Describe());
@@ -532,6 +578,9 @@ namespace OUAKMultiplayer
                         return;
                     }
                     Log($"PASS: gathered at the fan's stage screen: {PlazaFlow.Describe()} | {PlazaFlow.DescribeUi()}");
+                    _menuBlocked = !QuickChat.FreeToMove();
+                    _quickChatResult = $"walking in the plaza: free {_walkFree}; on the fan's stage screen: free {!_menuBlocked}";
+                    Log($"{(_walkFree && _menuBlocked ? "PASS" : "FAIL")}: quick chat stays out of the game's menus: {_quickChatResult}");
                     Log("where: " + WhereAll());
                     FrameCapture.Request("hud_gather");
                     if (_musicTest)
@@ -995,7 +1044,7 @@ namespace OUAKMultiplayer
                     Log($"teleport: {(_teleportOk ? "OK" : "FAILED")}, {_teleportResult}");
                     Log($"timers: {(_timersOk ? "OK" : "FAILED")}, {_timerResult}");
                     Log($"ranking: {(_rankingOk ? "OK" : "FAILED")}, {_rankingResult}; Results: {SyncRun.Standings.Count} ranked by \"{Ranking.Current.Title}\", places {string.Join(",", Ranking.StandingsPlaces(SyncRun.Standings).Values)}");
-                    Quit(drawn && _restored && picked && _cooled && _turnsOk && _freebieOk && _animOk && portrait && chatOk && _voiceOk && _bubbleOk && syncOk && authorityOk && _teleportOk && _timersOk && _rankingOk && _suddenOk && _guardOk && _cousinOk && _sizeOk && _afterMatchOk && _boardsOk
+                    Quit(drawn && _restored && picked && _cooled && _turnsOk && _freebieOk && _animOk && portrait && chatOk && _voiceOk && _bubbleOk && syncOk && authorityOk && _teleportOk && _timersOk && _rankingOk && _suddenOk && _guardOk && _cousinOk && _sizeOk && _afterMatchOk && _boardsOk && _solidOk && _walkFree && _menuBlocked && _hudSpaceOk && _stallOk
                         ? $"{(_kingPath ? "PASS" : "INCOMPLETE")}: the host's authority (Force / Vote / Only me, one restart vote per stage, Force restart and Plaza, leaving the race = DQ that can't interrupt it), identities, the roster and run handshakes, the stopped-clock flag, prince poses mirrored (live and held), free roam, chat, quick chat, speech bubbles, voice chat (made-up voices, no microphone), a fan's stage pick (held Go, vote, gathering at its stage screen, {fan}), shared start, quick turns counted once each, " +
                           "the run timers (IGT, RTA, the win-condition moment, mirrored by the bot), live places by the ranking system and a custom one over the wire, teleport to a player in the plaza, a cousin swap in the plaza shown on the bot, ghosts off during scene changes, the host's freebie list (swap and take away), Sudden Death (15 s, only once the stage had ended for the bot), the bot's cousin animating, portraits, results, report, the sharing toggle and the vote cooldown all worked without a crash"
                         : !drawn ? "FAIL: the results weren't drawn"
@@ -1013,6 +1062,8 @@ namespace OUAKMultiplayer
                         : !_sizeOk ? $"FAIL: the ghost's size: {_sizeResult}"
                         : !_afterMatchOk ? $"FAIL: the plaza after the match: {_afterMatchResult}"
                         : !_boardsOk ? $"FAIL: leaderboards: {_boardsResult}"
+                        : !_solidOk ? $"FAIL: ghosts solid: {_solidResult}"
+                        : !(_walkFree && _menuBlocked) ? $"FAIL: quick chat and the game's menus: {_quickChatResult}"
                         : !authorityOk ? $"FAIL: host authority (choice {_promptOk}, rules {_rulesOk}, restart vote {_voteRestartOk}, no second vote {_lockOk}, Force restart {_forceRestartOk}, pause menu {_pauseOk}, leaving the race {_dqOk}, Force Plaza {_forcePlazaOk})"
                         : !_rosterOk ? "FAIL: a roster before Welcome still lists you twice"
                         : !_runCheckOk ? "FAIL: the client's run handshake (see 'run handshake check')"
@@ -1058,6 +1109,8 @@ namespace OUAKMultiplayer
         private static bool _freebieChecked3, _sfOffOk, _timersOk, _rankingOk, _suddenChecked, _suddenOk;
         private static string _suddenResult = "Sudden Death never started";
         private static bool _guardOk, _cousinOk, _sizeChecked, _sizeOk, _afterMatchOk, _boardsOk, _prevRecording, _recordingSet;
+        private static bool _walkFree, _menuBlocked, _solidOk, _hudSpaceOk, _stallOk;
+        private static string _solidResult = "not tried", _quickChatResult = "not tried";
         private static string _boardsResult = "not checked", _prevRecordFolder;
         private static string _afterMatchResult = "not reached";
         private static float _afterMatchDeadline;
@@ -1134,6 +1187,11 @@ namespace OUAKMultiplayer
                 _timerResult += $" | goal reached {gm._hasCleared} (Size Time {RunClocks.Clock(gm._clearTime)}): {RunClocks.Describe()}; " +
                                 $"the bot shows win {botShows} (IGT {RunClocks.Clock(bot?.State.ClearIgt ?? -1f)}, badge {bot?.State.HudRank})";
                 Log($"{(_timersOk ? "PASS" : "FAIL")}: timers: {_timerResult}");
+                // The player bar's screen space, for other mods' HUD (the API's HudSpace; the Dash Bar moves up out of its way).
+                var claim = HudSpace.Claims.FirstOrDefault(c => c.owner == "OUAK Multiplayer/PlayerBar");
+                _hudSpaceOk = claim.owner != null && claim.rect.width > 100f && claim.rect.height > 40f && claim.rect.yMax <= Screen.height + 1f;
+                Log($"{(_hudSpaceOk ? "PASS" : "FAIL")}: the player bar's claimed screen space: {(claim.owner == null ? "none" : claim.rect.ToString())} on a {Screen.width}x{Screen.height} screen, " +
+                    $"bottom used under it {HudSpace.BottomUsed(claim.rect.xMin, claim.rect.xMax):0}");
                 FrameCapture.Request("hud_timers");
                 // Ranking: live places by Standard. Both reached the goal, so the stage score (here the diameter) decides:
                 // the bigger katamari is 1st whoever reached the goal first (the bot's size is its own, not yours). Then a
@@ -1384,8 +1442,9 @@ namespace OUAKMultiplayer
         /// <summary>The plaza of the era you're in (else the first one), not DLC.</summary>
         private static MapEntry PlazaEntry()
         {
-            int idx = 0;
-            try { idx = GameRefs.Save._stageIndex; } catch { }
+            // The Edo plaza (index 6) the test was written for, whatever plaza the save was last in (2026-11-12: the save's
+            // last plaza was the Super Stream one, skipped, and the fallback was the Tutorial plaza with its opening demo).
+            int idx = 6;
             var plazas = StageCatalog.Entries.Where(e => e.Kind == MapKind.Plaza && !string.IsNullOrEmpty(e.PlazaKey) && !e.NeedsAA).ToList();
             MapEntry here = null;
             foreach (var e in plazas)

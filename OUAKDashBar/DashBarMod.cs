@@ -61,8 +61,21 @@ namespace OUAKDashBar
             GameEvents.Update += DashBarTest.Tick;
             GameEvents.StageLeft += GaugeView.Release;
             GameEvents.Quit += GaugeView.Release;
+            FollowHudSpace();
             DashBarTest.CheckFlag();
             Log.Info("Dash Bar loaded.");
+        }
+
+        /// <summary>The name the bar's own space would be claimed under (it claims none; it keeps clear of the others).</summary>
+        public const string HudOwner = "OUAK Dash Bar";
+
+        // Keeps the gauge clear of other mods' HUD at the bottom centre (e.g. OUAK Multiplayer's player bar, however
+        // many rows it stacks), through the API's HudSpace. An older API without it: the gauge stays where the game put it.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void FollowHudSpace()
+        {
+            try { GaugeView.OtherHud = () => HudSpace.Claims; _ = HudSpace.Claims; }
+            catch (Exception e) { Log.Warn("This OUAK Modding API has no HudSpace; the bar won't move out of other HUD's way (" + e.Message + ")."); }
         }
 
         // After the game's own Update (the dash timers run there), so the bar shows this frame's stamina.

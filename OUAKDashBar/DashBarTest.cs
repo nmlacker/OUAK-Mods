@@ -24,7 +24,8 @@ namespace OUAKDashBar
     /// OUAKSpeedrunTools' DashBugTest does it), so the game's own dash code runs.
     /// Flag words: <c>probe</c> (only dump the game's gauge and show it at a few values), <c>slot N</c>, and where:
     /// <c>battle</c> (Katamari Ball, Battle (Jurassic) against CPU princes), <c>race</c>, <c>target</c> (the API's modes);
-    /// none = the story stage.
+    /// none = the story stage; <c>watch</c>: drive nothing, only watch another test (e.g. OUAK Multiplayer's online test)
+    /// and check the bar against other mods' real HUD claims (pictures when it has moved out of their way).
     /// Lines start with [DashBarTest]; pictures go to UserData/OUAKDashBar/TestShots; per-frame values to dashtest.csv.
     /// </summary>
     internal static class DashBarTest
@@ -39,6 +40,7 @@ namespace OUAKDashBar
         private static bool _skippedFly, _probeOnly, _blockSaves;
         private static int _slot = -1;
         private static string _where = "story";
+        private static bool _layout, _kingSeen;
         private static bool Multi => _where != "story";
         private static string _lastIntro;
         private static readonly HookSet Hooks = new("ouak.dashbar.test");
@@ -56,7 +58,19 @@ namespace OUAKDashBar
             string text = File.ReadAllText(flag);
             try { File.Delete(flag); } catch { }
             var w = text.Split(new[] { ' ', '\n', '\r', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLowerInvariant()).ToList();
+            if (w.Remove("watch"))
+            {
+                GameEvents.LateUpdate += WatchTick;
+                GameEvents.Quit += () =>
+                {
+                    Msg($"watch summary: {_watchShots} picture(s); the bar's target place changed {GaugeView.LiftChanges} time(s)");
+                    Check("watch: the bar never dipped home and back (within 1 s) while the space under it stayed", GaugeView.Dips == 0, $"{GaugeView.Dips} dip(s)");
+                };
+                Msg("armed: watch only (no inputs, no save hooks): the bar against other mods' HUD claims");
+                return;
+            }
             _probeOnly = w.Remove("probe");
+            _layout = w.Remove("layout");
             _where = w.FirstOrDefault(x => x is "battle" or "race" or "target") ?? "story";
             int i = w.IndexOf("slot");
             if (i >= 0 && i + 1 < w.Count && int.TryParse(w[i + 1], out int s)) _slot = s - 1;
@@ -181,6 +195,13 @@ namespace OUAKDashBar
                     {
                         if (gm._isInDemoCamera && !_skippedFly && now - _phaseStart > 6f) { Msg("skipping the fly-over"); gm.EndDemoCameraWithFade(); _skippedFly = true; }
                         var ui = SingletonMonoBehaviour<GlobalUIController>.Instance;
+                        if (_layout && !_kingSeen && !gm._isInDemoCamera && ui != null && ui.IsInMessage && now - _phaseStart > 8f)
+                        {
+                            _kingSeen = true;
+                            Msg("layout: the King's opening talk: " + KingInfo() + " | bar: " + BarInfo(gm));
+                            FrameCapture.Request("L_opening_king", Shots);
+                            _at = now + 1.5f; return;
+                        }
                         if (!gm._isInDemoCamera && ui != null && ui.CanSkipMessage && now - _phaseStart > 8f) { Msg("skipping the King's talk"); ui.SkipNowMessage(); _at = now + 1f; return; }
                         _at = now + 0.1f; return;
                     }
@@ -190,7 +211,7 @@ namespace OUAKDashBar
                     Msg($"playing: {gm.TargetStage}, size {Katamari.SizeText}; InStage {GameRefs.InStage}");
                     Msg($"constants: MaxOujiDashTime {F(core.MaxOujiDashTime)}, AddTimePerDashActive {F(core.AddTimePerDashActive)}, MultiDashCoolTime {F(core.MultiDashCoolTime)}, " +
                         $"control type {core.CoreInput?.nowControllType}, debug infinite {GameRefs.Global?._debugInifiniteDash}, timeScale {Time.timeScale}");
-                    _script = (_probeOnly ? Probe() : Scenarios()).GetEnumerator();
+                    _script = (_probeOnly ? Probe() : _layout ? LayoutProbe() : Scenarios()).GetEnumerator();
                     _wait = null;
                     _running = true;
                     Enter(Phase.Run, 600f);
@@ -300,11 +321,18 @@ namespace OUAKDashBar
             if (idx == null || idx.Length == 0) return;
             int cur = idx[0];
             var keys = pad.keylistDown;
-            if (_l2 && keys != null && cur >= 0 && cur < keys.Length) keys[cur] |= InputController.KeysFlag[(int)eKeyMap.L2];
-            if (_startKey && keys != null && cur >= 0 && cur < keys.Length) keys[cur] |= InputController.KeysFlag[(int)eKeyMap.Start];
+            // The physical buttons that do the dash (L2) and pause (Start) jobs now: the API's controller rebinding
+            // (PadBindings, after this in the same input update) turns them into those jobs.
+            if (_l2 && keys != null && cur >= 0 && cur < keys.Length) keys[cur] |= InputController.KeysFlag[(int)Button(eKeyMap.L2)];
+            if (_startKey && keys != null && cur >= 0 && cur < keys.Length) keys[cur] |= InputController.KeysFlag[(int)Button(eKeyMap.Start)];
             var sl = pad.keylistStickLeft; var sr = pad.keylistStickRight;
             if (sl != null && cur >= 0 && cur < sl.Length) sl[cur] = _lStick;
             if (sr != null && cur >= 0 && cur < sr.Length) sr[cur] = _rStick;
+        }
+
+        private static eKeyMap Button(eKeyMap job)
+        {
+            try { return PadBindings.ButtonFor(job); } catch { return job; }   // an older API without rebinding
         }
 
         private static IEnumerable<object> TapL2(int holdFrames = 3, int gapFrames = 5)
@@ -508,6 +536,398 @@ namespace OUAKDashBar
             });
         }
 
+        // ------------------------------------------------------------------ layout probe: what's at the bottom centre
+
+        private static string BarInfo(MainGameManager gm)
+        {
+            var g = GaugeView.Gauge;
+            bool on = false;
+            try { on = g != null && g.gameObject.activeInHierarchy; } catch { }
+            return $"shown {on}, HudVisible {GaugeView.HudVisible(gm)}, frame {GaugeView.CurrentScreenRect()}, lift {GaugeView.Lift:0.#}; " +
+                   $"player {gm.PlayerInitiated}, running {gm.IsGameRunning}, start message done {gm.StartMessageDone}, demo camera {gm._isInDemoCamera}, " +
+                   $"pause {gm.MainUI?.PauseObjs?.isOpend}, demo {gm.MainUI?.DemoObjs?.isOpend}, LAYER00 {gm.MainUI?.Layer00?.gameObject.activeInHierarchy}";
+        }
+
+        private static string KingInfo()
+        {
+            var gui = SingletonMonoBehaviour<GlobalUIController>.Instance;
+            if (gui == null) return "no GlobalUIController";
+            var parts = new List<string> { $"in message {gui.IsInMessage}, demo message {gui.IsInDemoMessage}" };
+            try
+            {
+                foreach (var c in gui.GetComponentsInChildren<Canvas>(true))
+                    if (c != null && c.gameObject.activeInHierarchy)
+                        parts.Add($"canvas {PathOf(c.transform)}: {c.renderMode}, order {c.sortingOrder}, root {c.isRootCanvas}, override {c.overrideSorting}");
+                var k = gui.PermKingController;
+                if (k != null)
+                {
+                    var kt = k._kingText != null ? k._kingText.transform.TryCast<RectTransform>() : null;
+                    var kf = k._kingFace != null ? k._kingFace.transform.TryCast<RectTransform>() : null;
+                    if (kt != null) parts.Add($"King's text {PathOf(kt)} active {kt.gameObject.activeInHierarchy}: {ScreenRectOf(kt)}");
+                    if (kf != null) parts.Add($"King's face active {kf.gameObject.activeInHierarchy}: {ScreenRectOf(kf)}");
+                }
+            }
+            catch (Exception e) { parts.Add("(" + e.Message + ")"); }
+            return string.Join(" | ", parts);
+        }
+
+        // A RectTransform's screen rect (bottom-up pixels), through its own root canvas.
+        private static Rect ScreenRectOf(RectTransform rt)
+        {
+            if (rt == null) return default;
+            var c = new Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<Vector3>(4);
+            rt.GetWorldCorners(c);
+            var canvas = rt.GetComponentInParent<Canvas>();
+            if (canvas != null && !canvas.isRootCanvas) canvas = canvas.rootCanvas;
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            Vector2 a = RectTransformUtility.WorldToScreenPoint(cam, c[0]), b = RectTransformUtility.WorldToScreenPoint(cam, c[2]);
+            return UnityEngine.Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+        }
+
+        // Every visible HUD piece two levels under LAYER00 / LAYER01 that reaches into the bottom third of the screen.
+        private static void DumpBottomHud(string when)
+        {
+            var ui = GameRefs.Main?.MainUI;
+            if (ui == null) return;
+            var lines = new List<string>();
+            foreach (var layer in new[] { ui.Layer00, ui.Layer01 })
+            {
+                if (layer == null) continue;
+                for (int i = 0; i < layer.childCount; i++)
+                {
+                    var t = layer.GetChild(i);
+                    if (!t.gameObject.activeInHierarchy) continue;
+                    var rt = t.TryCast<RectTransform>();
+                    var r = ScreenRectOf(rt);
+                    float alpha = 1f;
+                    try { var cg = t.GetComponent<CanvasGroup>(); if (cg != null) alpha = cg.alpha; } catch { }
+                    if (r.yMin < Screen.height / 3f && r.width > 1f)
+                        lines.Add($"{layer.name}/{t.name} {r} alpha {alpha:0.##}");
+                    for (int j = 0; j < t.childCount; j++)
+                    {
+                        var c = t.GetChild(j);
+                        if (!c.gameObject.activeInHierarchy) continue;
+                        var cr = ScreenRectOf(c.TryCast<RectTransform>());
+                        float ca = alpha;
+                        try { var cg = c.GetComponent<CanvasGroup>(); if (cg != null) ca *= cg.alpha; } catch { }
+                        if (cr.yMin < Screen.height / 3f && cr.width > 1f && cr.height > 1f)
+                            lines.Add($"  {layer.name}/{t.name}/{c.name} {cr} alpha {ca:0.##}");
+                    }
+                }
+            }
+            Msg($"layout {when}: bottom HUD pieces (screen px, bottom-up; screen {Screen.width}x{Screen.height}):\n    " + string.Join("\n    ", lines));
+        }
+
+        private static string ItemInfo()
+        {
+            var it = GameRefs.Main?.MainUI?.ItemUI;
+            if (it == null) return "no item UI";
+            float a = -1f;
+            try { a = it._canvasGroup != null ? it._canvasGroup.alpha : -1f; } catch { }
+            return $"item UI active {it.gameObject.activeInHierarchy}, alpha {a:0.##}, back {ScreenRectOf(it.ItemIconBack?.rectTransform)}, icon {ScreenRectOf(it.ItemIcon?.rectTransform)}, " +
+                   $"ring {ScreenRectOf(it.ItemTimerGauge?.rectTransform)}, root {ScreenRectOf(it.transform.TryCast<RectTransform>())}";
+        }
+
+        private static string SubInfo()
+        {
+            var sc = GameRefs.Main?.MainUI?.SubChallengeUI;
+            if (sc == null) return "no sub-challenge UI";
+            float a = -1f;
+            try { a = sc._mainGroup != null ? sc._mainGroup.alpha : -1f; } catch { }
+            return $"sub-challenge active {sc.gameObject.activeInHierarchy}, non-active {sc._nonActive}, alpha {a:0.##}, now {sc._nowCount}/{sc._nowTarget}, " +
+                   $"rect {ScreenRectOf(sc.transform.TryCast<RectTransform>())}, fill {ScreenRectOf(sc.FillBackground)}, start pos {sc._startPos}, demo pos {sc._demoPos}";
+        }
+
+        private static IEnumerable<object> LayoutProbe()
+        {
+            var gm = GameRefs.Main;
+            Msg("layout: playing: " + BarInfo(gm));
+            yield return Secs(1f);
+            DumpBottomHud("plain");
+            Msg("layout: " + ItemInfo());
+            Msg("layout: " + SubInfo());
+            Shot("L_plain");
+            yield return Secs(0.6f);
+
+            // The freebie slot: a Magnet (the slot's get animation), then used (the icon with its countdown ring).
+            gm.EndItemEffect(true);
+            gm.SetInventoryItem(eInstageItemType.Magnet, false, true);
+            yield return Secs(2.5f);
+            Msg("layout: holding a Magnet: " + ItemInfo());
+            DumpBottomHud("holding a Magnet");
+            Shot("L_item_held");
+            yield return Secs(0.6f);
+            gm.ActivateItemEffect();
+            yield return Secs(1.5f);
+            Msg("layout: Magnet in use: " + ItemInfo());
+            Shot("L_item_used");
+            yield return Secs(0.6f);
+
+            // The sub-challenge counter: shown the game's way if this stage has one, else forced for the measurement.
+            Msg("layout: sub-challenge before: " + SubInfo());
+            var sc = gm.MainUI.SubChallengeUI;
+            if (sc != null && (sc._nonActive || !sc.gameObject.activeInHierarchy))
+            {
+                try { sc.gameObject.SetActive(true); sc.SetSubChallengeData(0, 100, false, false); sc.StartInitDemo(); Msg("layout: sub-challenge forced on (test only)"); }
+                catch (Exception e) { Msg("layout: couldn't force the sub-challenge: " + e.Message); }
+            }
+            yield return Secs(3f);
+            Msg("layout: sub-challenge after: " + SubInfo());
+            DumpBottomHud("Magnet in use + sub-challenge");
+            Shot("L_item_sub");
+            yield return Secs(0.6f);
+
+            // Everything at once, with a 1-player Player Bar stand-in (the user's picture).
+            GameEvents.Update += ClaimFake;
+            _fakeOverlay = ModGui.AddOverlay(DrawFake, 0, "OUAKDashBar test");
+            _fake = PlayerBarRect(1, false);
+            yield return Secs(1.5f);
+            Msg("layout: + a 1-player Player Bar stand-in " + _fake + ": " + BarInfo(gm));
+            Shot("L_all");
+            yield return Secs(0.6f);
+            _fake = default; HudSpace.Release(FakeOwner);
+            GameEvents.Update -= ClaimFake; _fakeOverlay?.Dispose(); _fakeOverlay = null;
+
+            // The King speaking mid-stage.
+            var gui = SingletonMonoBehaviour<GlobalUIController>.Instance;
+            foreach (int id in new[] { 0, 1, 2 })
+            {
+                try { gui.CallKingMessageGeneral(id, true, true); Msg($"layout: CallKingMessageGeneral({id})"); }
+                catch (Exception e) { Msg($"layout: CallKingMessageGeneral({id}): {e.Message}"); continue; }
+                yield return Secs(1.5f);
+                Msg($"layout: King message {id}: " + KingInfo() + " | bar: " + BarInfo(gm));
+                Shot($"L_king_{id}");
+                yield return Secs(0.6f);
+                if (gui.IsInMessage) break;
+            }
+            yield return Secs(4f);
+            Msg("layout: done: " + KingInfo());
+        }
+
+        // ------------------------------------------------------------------ 11. a crowded bottom centre
+
+        private static Rect Footprint()
+        {
+            Rect f = GaugeView.CurrentScreenRect(), l = GaugeView.LabelScreenRect();
+            return l.width > 0f ? UnityEngine.Rect.MinMaxRect(Mathf.Min(f.xMin, l.xMin), Mathf.Min(f.yMin, l.yMin), Mathf.Max(f.xMax, l.xMax), Mathf.Max(f.yMax, l.yMax)) : f;
+        }
+
+        private static IEnumerable<object> CrowdScenario(UIMultiDashGauge g)
+        {
+            _scen = "crowd";
+            var gm = GameRefs.Main;
+            yield return When(Idle, 5f, "idle");
+            // The freebie slot: a Magnet, used (its icon and countdown ring, as in the user's picture).
+            gm.EndItemEffect(true);
+            gm.SetInventoryItem(eInstageItemType.Magnet, false, true);
+            yield return Secs(2.5f);
+            gm.ActivateItemEffect();
+            yield return Secs(1f);
+            // The stage-goal counter and the collection counter (the user's green "13 / 100" is one of the game's counters
+            // at the bottom centre): switched on for the measurement (test only) when this stage doesn't show them.
+            // The stage-goal counter (the user's green "13 / 100" at the bottom centre; in this stage it's parked below the
+            // screen): brought up the game's way for the measurement (test only).
+            var ui0 = gm.MainUI;
+            var forced = new List<GameObject>();
+            var ct = ui0.ClearTargetUI;
+            if (ct != null)
+            {
+                string before = ScreenRectOf(ct.transform.TryCast<RectTransform>()).ToString();
+                try { ct.gameObject.SetActive(true); ct.SetNowClearTarget(0, false, false); ct.StartInitAnim(); forced.Add(ct.gameObject); }
+                catch (Exception e) { Msg("crowd: SetNowClearTarget / StartInitAnim: " + e.Message); }
+                Msg($"crowd: goal counter before: {before}, non-active {ct._nonActive}, text '{ct.MainText?.text}'");
+            }
+            // A 1-player player bar (the user's picture).
+            GameEvents.Update += ClaimFake;
+            _fakeOverlay = ModGui.AddOverlay(DrawFake, 0, "OUAKDashBar test");
+            _fake = PlayerBarRect(1, false);
+            yield return Secs(3f);   // the slot's slide-in, the counter's animation, pieces settling (0.25 s), the bar's glide
+            if (ct != null)
+            {
+                Msg($"crowd: goal counter now: {ScreenRectOf(ct.transform.TryCast<RectTransform>())}, non-active {ct._nonActive}, text '{ct.MainText?.text}', main text at {ScreenRectOf(ct.MainText?.rectTransform)}");
+                if (ScreenRectOf(ct.MainText?.rectTransform).yMax <= 0f)
+                {
+                    try { ct.Anim.Play(UIClearTargetText.ANIM_IDLE, -1, 0f); Msg("crowd: goal counter still below the screen: its Animator put in " + UIClearTargetText.ANIM_IDLE + " (test only)"); } catch (Exception e) { Msg("crowd: Anim.Play: " + e.Message); }
+                    yield return Secs(1.5f);
+                    Msg($"crowd: goal counter now: {ScreenRectOf(ct.transform.TryCast<RectTransform>())}, main text at {ScreenRectOf(ct.MainText?.rectTransform)}");
+                }
+            }
+            Msg("crowd: " + ItemInfo());
+            var obstacles = GaugeView.Obstacles.ToList();
+            try { var my = gm.MainUI.OujiBackLoader?._myRect; Msg($"crowd: the prince picture's rect {(my != null ? ScreenRectOf(my).ToString() : "none")}, active {my?.gameObject.activeInHierarchy}"); } catch { }
+            Msg($"crowd: the bar keeps clear of: {string.Join("; ", obstacles.Select(o => $"{o.name} {o.rect}"))}");
+            Rect fp = Footprint();
+            var it = gm.MainUI.ItemUI;
+            Rect ring = ScreenRectOf(it?.ItemTimerGauge?.rectTransform), bar = BottomUp(_fake);
+            bool Clear(Rect a, Rect b) => a.width <= 0f || b.width <= 0f || !a.Overlaps(b);
+            var hits = obstacles.Where(o => !Clear(fp, o.rect)).Select(o => o.name).ToList();
+            Check("11 crowd: the freebie slot, a counter and the player bar are all seen", obstacles.Any(o => o.name.Contains("ItemCanvas")) && forced.All(f => obstacles.Any(o => o.name.EndsWith(f.name))) && obstacles.Any(o => o.name == FakeOwner),
+                  string.Join("; ", obstacles.Select(o => o.name)));
+            Check("11 crowd: the bar and its countdown overlap none of them, on screen, in the bottom of it",
+                  hits.Count == 0 && Clear(fp, ring) && Clear(fp, bar) && fp.xMin >= 0f && fp.xMax <= Screen.width && fp.yMax <= Screen.height * GaugeView.MaxTop + 1f,
+                  $"bar + countdown {fp} ({GaugeView.Dock}: moved {GaugeView.Shift:0} across, {GaugeView.Lift:0} up, {GaugeView.Scale * 100f:0}% size); overlaps {(hits.Count == 0 ? "none" : string.Join(", ", hits))}; ring {ring}, player bar {bar}");
+            int inItem = -1, inSub = -1, inBar = -1;
+            var slot = obstacles.FirstOrDefault(o => o.name.Contains("ItemCanvas")).rect;
+            var counter = obstacles.FirstOrDefault(o => forced.Any(f => o.name.EndsWith(f.name))).rect;
+            Picture("11_crowd", slot, Yellow, n => inItem = n);
+            yield return When(() => inItem >= 0, 5f, "the picture");
+            Picture("11_crowd_b", counter, Yellow, n => inSub = n);
+            yield return When(() => inSub >= 0, 5f, "the picture");
+            Picture("11_crowd_c", GaugeView.CurrentScreenRect(), Yellow, n => inBar = n);
+            yield return When(() => inBar >= 0, 5f, "the picture");
+            Check("11 crowd: no bar drawn over the freebie slot or the counter, the bar drawn in full", inItem < 50 && inSub < 50 && inBar > 2000,
+                  $"bar-yellow pixels: {inItem} in the freebie slot, {inSub} in the counter, {inBar} in the bar's frame");
+            // Back to normal: the stand-in goes, the counter as it was, the Magnet ends.
+            _fake = default; HudSpace.Release(FakeOwner);
+            GameEvents.Update -= ClaimFake; _fakeOverlay?.Dispose(); _fakeOverlay = null;
+            try { if (ct != null) { ct.ResetClearTargetUI(); } } catch { }
+            gm.EndItemEffect(true);
+            yield return Secs(1.5f);
+            Msg($"crowd over: the bar moved {GaugeView.Shift:0} across, {GaugeView.Lift:0} up; keeping clear of {GaugeView.Obstacles.Count} thing(s)");
+        }
+
+        private static IEnumerable<object> KingScenario(UIMultiDashGauge g)
+        {
+            _scen = "king";
+            var gm = GameRefs.Main;
+            var gui = SingletonMonoBehaviour<GlobalUIController>.Instance;
+            bool spoke = false;
+            for (int id = 0; id < 3 && !spoke; id++)
+            {
+                try { gui.CallKingMessageGeneral(id, true, true); }
+                catch (Exception e) { Msg($"king: CallKingMessageGeneral({id}): {e.Message}"); continue; }
+                yield return Secs(1.5f);
+                spoke = gui.IsInMessage;
+                Msg($"king: message {id}: speaking {spoke}; " + KingInfo());
+            }
+            if (!spoke) { Msg("king: couldn't make the King speak mid-stage; not checked"); yield break; }
+            Check("12 the King speaks: the bar stays on screen", g.gameObject.activeInHierarchy && GaugeView.HudVisible(gm), BarInfo(gm));
+            Shot("12_king");
+            yield return When(() => !gui.IsInMessage, 15f, "the King to finish");
+            Check("12 after the King: the bar is still there", g.gameObject.activeInHierarchy, BarInfo(gm));
+        }
+
+        // ------------------------------------------------------------------ watch: real HUD claims
+
+        private static int _watchShots;
+        private static float _watchNext;
+
+        private static void WatchTick()
+        {
+            try
+            {
+                if (_watchShots >= 3 || Time.unscaledTime < _watchNext || !GaugeView.Shown || FrameCapture.Busy) return;
+                var g = GaugeView.Gauge;
+                if (g == null || !g.gameObject.activeInHierarchy) return;
+                if (GaugeView.Lift <= 0f || Mathf.Abs(GaugeView.Lift - GaugeView.LiftTarget) > 0.5f) return;   // settled above something
+                Rect now = GaugeView.CurrentScreenRect(), label = GaugeView.LabelScreenRect();
+                var under = HudSpace.Claims.Where(c => c.owner != DashBarMod.HudOwner && c.rect.xMax > now.xMin && c.rect.xMin < Mathf.Max(now.xMax, label.xMax)).ToList();
+                if (under.Count == 0) return;
+                _watchShots++;
+                _watchNext = Time.unscaledTime + 8f;
+                var top = under.OrderBy(c => c.rect.yMin).First();
+                float topUp = Screen.height - top.rect.yMin, gap = GaugeView.LiftGap * Screen.height / 1080f;
+                string name = $"watch_{_watchShots}";
+                Check($"watch {_watchShots}: the bar sits just above '{top.owner}'", Mathf.Abs(now.yMin - (topUp + gap)) < 1.5f,
+                      $"claim {top.rect} (top {topUp:0.#} px up), frame bottom {now.yMin:0.#}, lift {GaugeView.Lift:0.#}, scene {SceneLoader.ActiveScene}, stamina {DashBarMod.Current}");
+                // (Counting yellow inside the claim doesn't work here: the player bar's own size text is gold.)
+                int changes = GaugeView.LiftChanges, shot = _watchShots;
+                Picture(name, now, Yellow, n =>
+                    Check($"watch {shot}: the bar drawn in full where it is, clear of '{top.owner}'", n > 2000 && now.yMin >= topUp,
+                          $"{n} bar-yellow pixels in its frame; frame bottom {now.yMin:0.#} >= claim top {topUp:0.#} (picture {name}); target changes so far {changes}"));
+            }
+            catch (Exception e) { Msg("watch: " + e.Message); _watchShots = 99; }
+        }
+
+        // ------------------------------------------------------------------ 10. HUD space
+
+        private const string FakeOwner = "OUAKDashBar test/player bar";
+        private static Rect _fake;            // IMGUI screen rect claimed (and drawn) every frame; width 0 = none
+        private static Texture2D _fakeTex;
+        private static IDisposable _fakeOverlay;
+
+        // OUAK Multiplayer's player bar layout (PlayerBar.cs): slots 224 x 80, gap 6, group gap 30, 14 above the bottom,
+        // in GUI units of Screen.height / 1080 (1..3).
+        private static Rect PlayerBarRect(int players, bool twoRows)
+        {
+            float k = Mathf.Clamp(Screen.height / 1080f, 1f, 3f), sw = Screen.width / k, sh = Screen.height / k;
+            const float W = 224f, H = 80f, Gap = 6f, GroupGap = 30f, Bottom = 14f;
+            bool two = twoRows && players > 4;
+            float width = two ? 4 * W + 3 * Gap : players * W + (players - 1) * Gap + (players > 4 ? GroupGap : 0f);
+            float height = two ? 2 * H + Gap : H;
+            return new Rect((sw - width) / 2f * k, (sh - Bottom - height) * k, width * k, height * k);
+        }
+
+        private static void ClaimFake()
+        {
+            if (_fake.width > 0f) HudSpace.Claim(FakeOwner, _fake);
+        }
+
+        private static void DrawFake()
+        {
+            if (_fake.width <= 0f || Event.current == null || Event.current.type != EventType.Repaint) return;
+            if (_fakeTex == null)
+            {
+                _fakeTex = new Texture2D(1, 1) { hideFlags = HideFlags.HideAndDontSave };
+                _fakeTex.SetPixels(new[] { new Color(0.15f, 0.55f, 1f, 0.85f) });
+                _fakeTex.Apply();
+            }
+            GUI.DrawTexture(_fake, _fakeTex);
+        }
+
+        // Screen rect (bottom-up) of an IMGUI rect.
+        private static Rect BottomUp(Rect r) => new(r.x, Screen.height - r.yMax, r.width, r.height);
+
+        private static IEnumerable<object> HudSpaceScenario(UIMultiDashGauge g)
+        {
+            _scen = "hudspace";
+            yield return When(Idle, 5f, "idle");
+            GameEvents.Update += ClaimFake;
+            _fakeOverlay = ModGui.AddOverlay(DrawFake, 0, "OUAKDashBar test");
+            Rect home = GaugeView.CurrentScreenRect();
+            float gap = GaugeView.LiftGap * Screen.height / 1080f;
+            Msg($"HUD space: the bar's frame at {home}; claims are drawn in blue; gap {gap:0.#} px");
+            var cases = new (string name, Rect claim, bool clear)[]
+            {
+                ("10_bar_2_players", PlayerBarRect(2, false), true),
+                ("10_bar_8_two_rows", PlayerBarRect(8, true), true),
+                ("10_bar_8_one_row", PlayerBarRect(8, false), true),
+                ("10_off_to_the_side", new Rect(40f, Screen.height - 400f, 300f, 380f), false),
+            };
+            foreach (var (name, claim, clear) in cases)
+            {
+                _fake = claim;
+                yield return Secs(1.2f);   // the gauge glides there
+                Rect now = GaugeView.CurrentScreenRect(), label = GaugeView.LabelScreenRect();
+                float top = Screen.height - claim.yMin;   // the claim's top, px from the bottom
+                float used = HudSpace.BottomUsed(now.xMin, Mathf.Max(now.xMax, label.xMax), DashBarMod.HudOwner);
+                if (clear)
+                    Check($"10 {name}: the bar sits just above it", Mathf.Abs(now.yMin - (top + gap)) < 1.5f && Mathf.Abs(now.x - home.x) < 1f && GaugeView.Lift > 0f,
+                          $"claim {claim} (top {top:0.#} px up), BottomUsed {used:0.#}; frame bottom {now.yMin:0.#} (home {home.yMin:0.#}), lift {GaugeView.Lift:0.#}");
+                else
+                    Check($"10 {name}: a claim beside the bar doesn't move it", Mathf.Abs(now.yMin - home.yMin) < 1f && used == 0f,
+                          $"claim {claim}, BottomUsed {used:0.#}; frame bottom {now.yMin:0.#} (home {home.yMin:0.#})");
+                Check($"10 {name}: the countdown box stays beside the frame", label.width > 0f && Mathf.Abs(label.center.y - now.center.y) < now.height * 0.5f && label.xMin >= now.xMax - 2f,
+                      $"frame {now}, countdown box {label}");
+                int yellowIn = -1, yellowBar = -1;
+                Picture(name, BottomUp(claim), Yellow, n => yellowIn = n);
+                yield return When(() => yellowIn >= 0, 5f, "the picture");
+                Picture(name + "_bar", now, Yellow, n => yellowBar = n);
+                yield return When(() => yellowBar >= 0, 5f, "the picture");
+                Check($"10 {name}: no bar drawn inside the claimed space, the bar drawn in full where it is", yellowIn < 50 && yellowBar > 2000,
+                      $"bar-yellow pixels: {yellowIn} inside the claim, {yellowBar} in the bar's frame");
+            }
+            _fake = default;
+            HudSpace.Release(FakeOwner);
+            yield return Secs(1.2f);
+            Rect back = GaugeView.CurrentScreenRect();
+            Check("10 released: the bar goes back to where the game put it", Mathf.Abs(back.yMin - home.yMin) < 0.5f && GaugeView.Lift == 0f,
+                  $"frame bottom {back.yMin:0.#} (home {home.yMin:0.#}), lift {GaugeView.Lift:0.#}");
+            GameEvents.Update -= ClaimFake;
+            _fakeOverlay?.Dispose();
+            _fakeOverlay = null;
+        }
+
         private static IEnumerable<int> Layers(int mask)
         {
             for (int i = 0; i < 32; i++) if ((mask & (1 << i)) != 0) yield return i;
@@ -578,7 +998,9 @@ namespace OUAKDashBar
         {
             var here = C.transform.position;
             var starts = new List<(Vector3 pos, float a0)> { (here, C._coreAngle) };
-            if (!Multi && Vector3.Distance(here, KnownSpawn) < 6f) starts.Add((KnownSpawn, KnownSpawnAngle));
+            // The stage's known spawn point too, only when it's another spot (each probe dash rolls things up).
+            float dKnown = Vector3.Distance(here, KnownSpawn);
+            if (!Multi && dKnown < 6f && dKnown > 0.5f) starts.Add((KnownSpawn, KnownSpawnAngle));
             var found = new List<(Vector3 pos, float heading, float room)>();
             Msg("probing dash directions (test setup: stamina reset to full before each probe dash)");
             foreach (var (pos, a0) in starts)
@@ -637,6 +1059,7 @@ namespace OUAKDashBar
             _csv = new StreamWriter(System.IO.Path.Combine(Dir, "dashtest.csv"), false, Encoding.UTF8);
             _csv.WriteLine("scenario,t,unscaled,dt,gameDt,timerCalls,dashTimer,used,exhaust,phase,fill,regenIn,label,gaugeOn,maxLook,barFill,iconFill,hud");
             GameEvents.LateUpdate += Row;
+            Msg($"controller bindings: dash (L2) on {Button(eKeyMap.L2)}, pause (Start) on {Button(eKeyMap.Start)}");
             Msg($"hooks: timer {hooked}, quit {q}, wall {w}; settings: timer {DashBarMod.ShowTimer}, while dashing {DashBarMod.TimerWhileDashing}, hide when full {DashBarMod.HideWhenFull}");
 
             // ---- 1. Full stamina
@@ -936,6 +1359,18 @@ namespace OUAKDashBar
 
             }   // the long list (story stage, battle)
 
+            // ---- 10. Out of other HUD's way: claims shaped like OUAK Multiplayer's player bar (story stage)
+            if (!Multi)
+                foreach (var x in HudSpaceScenario(g)) yield return x;
+
+            // ---- 11. The user's picture: the freebie slot in use, the sub-challenge counter and a player bar at once
+            // ---- 12. The King speaking mid-stage: the bar stays
+            if (!Multi)
+            {
+                foreach (var x in CrowdScenario(g)) yield return x;
+                foreach (var x in KingScenario(g)) yield return x;
+            }
+
             // ---- 8. Matches: the game's battle code writes to the gauge itself; the bar is right again a frame later
             if (Multi && !shortList)
             {
@@ -978,6 +1413,8 @@ namespace OUAKDashBar
             }
 
             GameEvents.LateUpdate -= Row;
+            Msg("game HUD pieces the bar kept clear of during the run (scans, once settled): " + string.Join(", ", GaugeView.SeenPieces.Select(kv => $"{kv.Key} x{kv.Value}"))
+                + $"; the bar's spot changed {GaugeView.LiftChanges} time(s), {GaugeView.Dips} dip(s)");
             Check("every frame on screen: the bar is the stamina left", _frames > 1000 && _worstBar < 0.001f, $"worst {_worstBar:0.0000} over {_frames} frames");
             Check("every frame on screen: a countdown while dashing or out of dash", _noLabel == 0, $"{_noLabel} frames without one");
             Check("every frame on screen: the rainbow look exactly while the dash is unlimited", _wrongLook == 0, $"{_wrongLook} frames wrong");

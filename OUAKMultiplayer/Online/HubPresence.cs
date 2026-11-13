@@ -421,7 +421,7 @@ namespace OUAKMultiplayer
             return null;
         }
 
-        private static void ClearAll()
+        public static void ClearAll()
         {
             foreach (var v in Views.Values) v.Cousin?.Destroy();
             Views.Clear();

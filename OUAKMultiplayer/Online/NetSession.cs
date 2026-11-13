@@ -305,7 +305,12 @@ namespace OUAKMultiplayer
 
         public static string Join(string address, int port, string name, string password, bool remember = true)
         {
-            Leave(null);
+            if (!_rejoining) _rejoinUntil = 0f;
+            _rejoinAddress = address;
+            _rejoinPort = port;
+            _rejoinName = name;
+            _rejoinPassword = password;
+            Leave(null, false, keepRejoin: true);
             var ip = Resolve(address);
             _sock = OpenSocket(new IPEndPoint(IPAddress.Any, 0));
             _hostEp = new IPEndPoint(ip, port);
@@ -325,8 +330,11 @@ namespace OUAKMultiplayer
         }
 
         /// <summary>Closes the session (telling the others) and shows <paramref name="reason"/> if given.</summary>
-        public static void Leave(string reason, bool error = false)
+        public static void Leave(string reason, bool error = false) => Leave(reason, error, false);
+
+        private static void Leave(string reason, bool error, bool keepRejoin)
         {
+            if (!keepRejoin) _rejoinUntil = 0f;
             StopBot();
             if (_sock != null)
             {
@@ -441,9 +449,25 @@ namespace OUAKMultiplayer
         public static void Tick()
         {
             OnlineSelfTest.Tick();
-            if (_sock == null) return;
             float now = Time.unscaledTime;
+            float gap = now - _lastTick;
+            _lastTick = now;
+            if (_sock == null)
+            {
+                TryRejoin(now);
+                return;
+            }
+            // This game stalled (loading, or frozen): the others' packets waited, and nobody should be timed out
+            // for our own pause. Logged, so a dropped player can be told from a stalled game (the user's Super Stream
+            // playtest, 2026-11-12: the host stopped hearing a player ~20 s into a stage, no error on either side).
+            if (gap > 2f && _lastTick > 0f)
+            {
+                MelonLogger.Msg($"[Online] This game didn't update for {gap:0.0} s (loading, or it froze): the others get that long extra before timing out.");
+                foreach (var p in Peers.Values) p.LastHeard = Mathf.Max(p.LastHeard, now - 1f);
+                _hostHeard = Mathf.Max(_hostHeard, now - 1f);
+            }
             Receive(now);
+            LogSilence(now);
             if (_sock == null) return;
             CheckSharing(now);
             if (Mode == Role.Host) HostTick(now);
@@ -452,6 +476,63 @@ namespace OUAKMultiplayer
             SyncRun.Tick();
             Votes.Tick();
             _bot?.Tick(now);
+        }
+
+        private static float _lastTick = -1f, _rejoinUntil, _nextRejoin;
+        private static string _rejoinAddress, _rejoinPassword, _rejoinName;
+        private static int _rejoinPort, _rejoinTries;
+        private static bool _rejoining, _hostSilentLogged;
+        private static readonly HashSet<byte> _silentLogged = new();
+
+        /// <summary>Times a lost host was joined again by itself (self-test).</summary>
+        public static int Rejoins { get; private set; }
+
+        /// <summary>Whether this game is trying to get back into a session it lost.</summary>
+        public static bool Rejoining => _rejoinUntil > 0f && Time.unscaledTime < _rejoinUntil;
+
+        /// <summary>A player (or the host) not heard from for 3 s: logged once, with how long, before any time-out.</summary>
+        private static void LogSilence(float now)
+        {
+            if (Mode == Role.Host)
+            {
+                foreach (var p in Peers.Values)
+                {
+                    bool silent = now - p.LastHeard > 3f;
+                    if (silent && _silentLogged.Add(p.Id))
+                        MelonLogger.Msg($"[Online] Nothing from {p.Name} for {now - p.LastHeard:0.0} s (their last packet from {p.EndPoint}).");
+                    else if (!silent && _silentLogged.Remove(p.Id))
+                        MelonLogger.Msg($"[Online] {p.Name} is back.");
+                }
+            }
+            else if (Mode == Role.Client && MyId != NoId)
+            {
+                bool silent = now - _hostHeard > 3f;
+                if (silent && !_hostSilentLogged) { _hostSilentLogged = true; MelonLogger.Msg($"[Online] Nothing from the host for {now - _hostHeard:0.0} s."); }
+                else if (!silent && _hostSilentLogged) { _hostSilentLogged = false; MelonLogger.Msg("[Online] The host is back."); }
+            }
+        }
+
+        /// <summary>
+        /// After losing the host (not after leaving or being refused), this game tries to join the same session again by
+        /// itself for a minute: a short stall or network hiccup costs a moment instead of the session.
+        /// </summary>
+        private static void TryRejoin(float now)
+        {
+            if (_rejoinUntil <= 0f) return;
+            if (now > _rejoinUntil)
+            {
+                _rejoinUntil = 0f;
+                MelonLogger.Msg($"[Online] Couldn't get back into the session ({_rejoinTries} tries in a minute).");
+                SetInfo("Couldn't get back into the session. Join again from the Online tab.", true);
+                return;
+            }
+            if (now < _nextRejoin) return;
+            _nextRejoin = now + 12f;
+            _rejoinTries++;
+            MelonLogger.Msg($"[Online] Trying to get back into the session (try {_rejoinTries}).");
+            _rejoining = true;
+            try { Join(_rejoinAddress, _rejoinPort, _rejoinName, _rejoinPassword, remember: false); }
+            finally { _rejoining = false; }
         }
 
         private static void Receive(float now)
@@ -696,6 +777,12 @@ namespace OUAKMultiplayer
                 {
                     byte id = r.U8();
                     if (MyId == NoId) SetInfo($"Connected as player {id + 1}.");
+                    if (MyId == NoId && _rejoinUntil > 0f)
+                    {
+                        _rejoinUntil = 0f;
+                        Rejoins++;
+                        MelonLogger.Msg($"[Online] Back in the session (rejoined after losing the host, try {_rejoinTries}).");
+                    }
                     MyId = id;
                     // A roster that came before our id may have listed us as someone else.
                     Peers.Remove(id);
@@ -1001,7 +1088,7 @@ namespace OUAKMultiplayer
             {
                 if (now > _joinDeadline)
                 {
-                    Leave("No answer from the host. Check the address and port, and that the host's UDP port is reachable.", true);
+                    Leave(Rejoining ? "No answer from the host yet. Trying again..." : "No answer from the host. Check the address and port, and that the host's UDP port is reachable.", true, keepRejoin: Rejoining);
                     return;
                 }
                 if (now >= _nextHello)
@@ -1014,7 +1101,10 @@ namespace OUAKMultiplayer
             }
             if (now - _hostHeard > Timeout)
             {
-                Leave("Lost the connection to the host.", true);
+                Leave("Lost the connection to the host. Trying to get back in...", true, keepRejoin: true);
+                _rejoinUntil = Time.unscaledTime + 60f;
+                _nextRejoin = Time.unscaledTime + 1f;
+                _rejoinTries = 0;
                 return;
             }
             if (now >= _nextState) SendTo(StatePacket(now), _hostEp);

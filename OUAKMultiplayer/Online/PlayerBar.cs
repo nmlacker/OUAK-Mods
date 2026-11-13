@@ -54,6 +54,7 @@ namespace OUAKMultiplayer
 
             float k = 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime);
             Teleport.BeginBar(scale);
+            float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
             for (int i = 0; i < n; i++)
             {
                 var e = entries[i];
@@ -64,7 +65,13 @@ namespace OUAKMultiplayer
                 var rect = new Rect(cur.x, cur.y, SlotW, SlotH);
                 Teleport.RecordSlot(e.Id, rect);
                 DrawSlot(rect, e);
+                minX = Mathf.Min(minX, rect.xMin); minY = Mathf.Min(minY, rect.yMin);
+                maxX = Mathf.Max(maxX, rect.xMax); maxY = Mathf.Max(maxY, rect.yMax);
             }
+            // The screen space the bar takes (one row or two, as it glides), for other mods' HUD (the API's HudSpace:
+            // the Dash Bar moves up out of its way). In screen pixels, IMGUI coordinates; it lapses when not drawn.
+            try { HudSpace.Claim("OUAK Multiplayer/PlayerBar", new Rect(minX * scale, minY * scale, (maxX - minX) * scale, (maxY - minY) * scale)); }
+            catch { }
             foreach (byte id in Shown.Keys.Where(id => entries.All(e => e.Id != id)).ToList()) Shown.Remove(id);
             return top;
         }

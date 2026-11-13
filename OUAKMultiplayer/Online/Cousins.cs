@@ -280,7 +280,7 @@ namespace OUAKMultiplayer
             // Ghosts are see-through (the game's "invincible" look); a studio cousin keeps its colours for its portrait.
             foreach (var r in model.GetComponentsInChildren<Renderer>(true))
             {
-                if (!_studio)
+                if (!_studio && GhostSettings.SeeThrough)
                 {
                     var mats = r.materials;
                     for (int i = 0; i < mats.Length; i++) GhostLook.MakeTranslucent(mats[i], GhostLook.CousinAlpha);
@@ -481,6 +481,7 @@ namespace OUAKMultiplayer
         /// <summary>Translucent copies of shared materials, one per original (objects stuck to remote katamaris).</summary>
         public static Il2CppReferenceArray<Material> TranslucentCopies(Il2CppReferenceArray<Material> src)
         {
+            if (!GhostSettings.SeeThrough) return src;
             var result = new Il2CppReferenceArray<Material>(src.Length);
             for (int i = 0; i < src.Length; i++)
             {
