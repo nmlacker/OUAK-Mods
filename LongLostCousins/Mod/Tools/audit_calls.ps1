@@ -15,8 +15,9 @@ param(
 #   FIELD    a field read or written in place (an interop property over a game field, or a struct field): no code needed
 #   NO BODY  a method without code in this build: never call it
 #   NOT FOUND a member the dummy assemblies do not have
-# Then each Harmony hook target the mod installs through HookSet.Prefix/Postfix, with its RVA and how many methods of the
-# whole game share that RVA (a shared body would fire the hook for the other methods too).
+# Then each Harmony hook target the mod installs through HookSet.Prefix/Postfix or the mod's HookPlus.Hook (prefix,
+# postfix and finalizer in one call), with its RVA and how many methods of the whole game share that RVA (a shared body
+# would fire the hook for the other methods too).
 # The exit code is 1 when anything is NO BODY or NOT FOUND, or a hook target is missing, bodiless or shared.
 #
 # -SelfTest also checks known members: one with code must come out OK, stripped ones must come out NO BODY.
@@ -180,8 +181,13 @@ foreach ($k in ($rows.Keys | Sort-Object)) {
 "members: " + (($counts.Keys | Sort-Object | ForEach-Object { "$_ $($counts[$_])" }) -join ", ")
 
 # ---------------------------------------------------------------- hook targets
-# HookSet.Prefix/Postfix(typeof(T), nameof(T.M), typeof(H), nameof(H.N), [Type[] args]): the first (ldtoken, ldstr) pair
-# after the previous hook call is the target; Type.EmptyTypes or a new Type[] { typeof(...) } narrows the overload.
+# HookSet.Prefix/Postfix(typeof(T), nameof(T.M), typeof(H), nameof(H.N), [Type[] args]) and
+# HookPlus.Hook(set, typeof(T), nameof(T.M), typeof(H), prefix, postfix, finalizer, [Type[] args]): the first (ldtoken,
+# ldstr) pair after the previous hook call is the target; Type.EmptyTypes or a new Type[] { typeof(...) } narrows the overload.
+function Test-HookCall($op) {
+    $dt = $op.DeclaringType.Name
+    return ($dt -eq "HookSet" -and ($op.Name -eq "Prefix" -or $op.Name -eq "Postfix")) -or ($dt -eq "HookPlus" -and $op.Name -eq "Hook")
+}
 $hooks = @()
 foreach ($t in $mod.GetTypes()) {
     foreach ($m in $t.Methods) {
@@ -200,12 +206,11 @@ foreach ($t in $mod.GetTypes()) {
                     $y = $ins[$j]
                     if ($y.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ldtoken) { $argTypes += (Get-Short $y.Operand) }
                     if ($y.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -or $y.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Callvirt) {
-                        if ($y.Operand.DeclaringType.Name -eq "HookSet") { break }
+                        if ($y.Operand.DeclaringType.Name -eq "HookSet" -or $y.Operand.DeclaringType.Name -eq "HookPlus") { break }
                     }
                 }
             }
-            if (($x.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -or $x.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Callvirt) -and
-                $x.Operand.DeclaringType.Name -eq "HookSet" -and ($x.Operand.Name -eq "Prefix" -or $x.Operand.Name -eq "Postfix")) {
+            if (($x.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -or $x.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Callvirt) -and (Test-HookCall $x.Operand)) {
                 # Narrow says whether an argument list was given (Type.EmptyTypes is an empty one, which PowerShell would turn into $null).
                 if ($pairs.Count -ge 1) { $hooks += , @{ Type = $pairs[0][0]; Method = $pairs[0][1]; Narrow = $sawArgs; Args = @($argTypes); Kind = $x.Operand.Name; In = "$($t.Name).$($m.Name)" } }
                 $pairs = @(); $argTypes = $null; $sawArgs = $false

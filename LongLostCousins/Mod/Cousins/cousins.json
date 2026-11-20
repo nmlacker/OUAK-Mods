@@ -1,5 +1,5 @@
 {
- "about": "The cousins the mod can dress the player as, one entry each. 'styles' maps a style key to its .llcm file, relative to this folder (format in FORMAT.md). 'build' is read only by Tools/export_llcm.py and Tools/check_llcm.py; its paths are relative to the LongLostCousins folder.",
+ "about": "The cousins the mod can dress the player as, one entry each. 'styles' maps a style key to its .llcm file, relative to this folder (format in FORMAT.md). 'icons' maps a style key to her select-screen icon (a PNG made by Tools/render_icons.py), relative to this folder. 'build' is read only by Tools/export_llcm.py and Tools/check_llcm.py; its paths are relative to the LongLostCousins folder.",
  "version": 1,
  "cousins": [
   {
@@ -8,6 +8,10 @@
    "styles": {
     "new": "Burda/burda_new.llcm",
     "old": "Burda/burda_old.llcm"
+   },
+   "icons": {
+    "new": "Burda/burda_icon_new.png",
+    "old": "Burda/burda_icon_old.png"
    },
    "style_names": {
     "new": "new style (OUAK)",

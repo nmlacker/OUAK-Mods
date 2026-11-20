@@ -17,6 +17,7 @@ A JSON object whose `cousins` array has one entry per cousin. The mod reads thes
 | `name` | the display name (`Burda`) |
 | `styles` | style key to .llcm path, relative to this `Cousins/` folder: `{"new": "Burda/burda_new.llcm", "old": "Burda/burda_old.llcm"}` |
 | `style_names` | style key to the words the tab shows after the name: `new style (OUAK)`, `old style (Katamari Forever)` |
+| `icons` | style key to her icon on the game's select screen, a 1024x1024 PNG made by `Tools/render_icons.py`, relative to this `Cousins/` folder: `{"new": "Burda/burda_icon_new.png", "old": "Burda/burda_icon_old.png"}` |
 | `notes` | plain text about the cousin, for people |
 
 `build` (the source .blend per style, the face map and rig spec, paths relative to the LongLostCousins folder) is read

@@ -5,9 +5,11 @@ using OUAKModAPI;
 namespace LongLostCousins.Dressing
 {
     /// <summary>
-    /// The mod's seven hooks on the game. They exist only while a cousin is chosen (or the test runs): with the mod off,
-    /// nothing of the game is hooked. Each handler only looks at the model and hands it on; none of them changes what
-    /// the game method does, and none lets an exception reach the game.
+    /// The mod's seven dressing hooks on the game. They exist only while a cousin is worn (<see cref="Chosen"/>, or the
+    /// test runs): with no cousin worn, only the select screen's slot hooks (and, while the settings name her, its marker hooks) are in
+    /// place (Select/SelectScreen.cs). Each handler
+    /// only looks at the model and hands it on; none of them changes what the game method does, and none lets an
+    /// exception reach the game.
     /// </summary>
     internal static class Hooks
     {

@@ -15,8 +15,11 @@ namespace LongLostCousins.Data
         public List<KeyValuePair<string, string>> Styles = new();
         /// <summary>Style key to the words the tab shows after the name.</summary>
         public Dictionary<string, string> StyleNames = new(StringComparer.Ordinal);
+        /// <summary>Style key to the select-screen icon (a PNG) relative to Cousins/.</summary>
+        public Dictionary<string, string> Icons = new(StringComparer.Ordinal);
 
         public string StylePath(string key) => Styles.FirstOrDefault(s => s.Key == key).Value;
+        public string IconPath(string key) => key != null && Icons.TryGetValue(key, out var p) ? p : null;
         public string StyleLabel(string key) => $"{Name}, {(StyleNames.TryGetValue(key, out var s) ? s : key + " style")}";
     }
 
@@ -94,6 +97,8 @@ namespace LongLostCousins.Data
                     foreach (var s in e.GetProperty("styles").EnumerateObject()) c.Styles.Add(new(s.Name, s.Value.GetString()));
                     if (e.TryGetProperty("style_names", out var sn))
                         foreach (var s in sn.EnumerateObject()) c.StyleNames[s.Name] = s.Value.GetString();
+                    if (e.TryGetProperty("icons", out var ic))
+                        foreach (var s in ic.EnumerateObject()) c.Icons[s.Name] = s.Value.GetString();
                     if (string.IsNullOrEmpty(c.Id) || string.IsNullOrEmpty(c.Name) || c.Styles.Count == 0)
                         throw new InvalidDataException("a cousin needs an id, a name and at least one style");
                     list.Add(c);

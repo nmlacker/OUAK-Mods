@@ -6,6 +6,7 @@ using Il2Cpp;
 using Il2CppApp.KatamariSin;
 using LongLostCousins.Data;
 using LongLostCousins.Dressing;
+using LongLostCousins.Select;
 using OUAKModAPI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,7 +17,8 @@ namespace LongLostCousins.Test
     /// Test only: <c>UserData/LongLostCousins/cousintest.flag</c> runs the in-game check once, then quits the game.
     /// The flag turns Burda on for this session only (settings.json is never written) and is deleted when read.
     /// Words in the flag: <c>style new</c> or <c>style old</c> (new by default), <c>slot N</c> (the last used slot by
-    /// default), <c>stage</c> (also test a story stage), <c>results</c> (also end the stage and test the results).
+    /// default), <c>stage</c> (also test a story stage), <c>results</c> (also end the stage and test the results),
+    /// <c>select</c> (start with Burda not chosen and pick her on the game's select screen on the ship, then the Prince).
     /// A backup of the saves is made before the slot is loaded, and every save write is blocked for the whole session.
     /// Lines start with [CousinTest]; the last one is <c>DONE pass=N fail=M</c>. Pictures go to
     /// UserData/LongLostCousins/TestShots.
@@ -32,7 +34,7 @@ namespace LongLostCousins.Test
         private static bool _running;
         private static string _style = "new";
         private static int _slot = -1;
-        private static bool _stage, _results;
+        private static bool _stage, _results, _select;
         private static int _pass, _fail;
         private static string _setupFailure;
         private static IEnumerator<object> _script;
@@ -76,6 +78,7 @@ namespace LongLostCousins.Test
             if (i >= 0 && i + 1 < w.Count && int.TryParse(w[i + 1], out int s)) _slot = s - 1;
             _results = w.Contains("results");
             _stage = _results || w.Contains("stage");
+            _select = w.Contains("select");
             _running = true;
             _script = Script().GetEnumerator();
 
@@ -86,11 +89,13 @@ namespace LongLostCousins.Test
                 Settings.ChooseInMemory(null, null);
                 return true;
             }
-            Settings.ChooseInMemory(Cousin, _style);
+            // With select, she starts not chosen (in memory), so only the select screen can turn her on.
+            Settings.ChooseInMemory(_select ? null : Cousin, _style);
             bool guard = SaveGuard.Install();
             SaveGuard.Hold = true;
-            Msg($"armed: {Settings.Describe()}, slot {(_slot < 0 ? "last used" : (_slot + 1).ToString())}, " +
-                $"{(_results ? "ship, stage and results" : _stage ? "ship and stage" : "ship only")}; every save write blocked {guard}");
+            Msg($"armed: {(_select ? "nobody chosen, " + Catalog.Find(Cousin)?.StyleLabel(_style) + " to be picked on the select screen" : Settings.Describe())}, " +
+                $"slot {(_slot < 0 ? "last used" : (_slot + 1).ToString())}, " +
+                $"{(_select ? "ship with the select screen" : "ship")}{(_results ? ", stage and results" : _stage ? " and stage" : " only")}; every save write blocked {guard}");
             if (!guard)
             {
                 _setupFailure = "the save hooks are missing; not loading a slot";
@@ -161,8 +166,24 @@ namespace LongLostCousins.Test
             Msg("on the ship");
             yield return Until(() => Contexts.PlazaOwnerModel() != null, 60f, "the walking cousin on the ship");
             yield return 4f;
-            foreach (var x in Ship()) yield return x;
-            if (_stage) foreach (var x in Stage()) yield return x;
+            if (_select) foreach (var x in SelectScreenTest()) yield return x;
+            else
+            {
+                // Picked in the tab, she is worn whatever cousin the save holds: say which one, for the log.
+                Msg($"the save holds cousin {Chosen.SavedCousin()}; worn now: {Chosen.On}");
+                foreach (var x in Ship()) yield return x;
+            }
+            if (_stage)
+            {
+                if (_select)
+                {
+                    // The select part ends with the Prince picked (she is off): turn her on again, in memory, for the stage.
+                    Settings.ChooseInMemory(Cousin, _style);
+                    Chosen.Refresh();
+                    Msg($"for the stage: {Settings.Describe()} turned on again in memory (hooks in place: {Hooks.Installed})");
+                }
+                foreach (var x in Stage()) yield return x;
+            }
         }
 
         private static bool TitleReady()
@@ -368,6 +389,390 @@ namespace LongLostCousins.Test
         {
             var n = meshes.Select(i => data.Meshes[i].Name).ToList();
             return n.Count == 0 ? "none" : string.Join(", ", n);
+        }
+
+        // ---------------------------------------------------------------- the game's select screen (word "select")
+
+        private static IntPtr WalkerPtr() => Contexts.PlazaOwnerModel()?.Pointer ?? IntPtr.Zero;
+        private static bool _openedDirectly, _eventDirect, _changeDirect, _reopened;
+
+        /// <summary>Puts the cursor on page <paramref name="page"/>, slot <paramref name="index"/> (ChangePage, then SetCursorIndex).</summary>
+        private static void FocusSlot(SelectionMenuController menu, int page, int index)
+        {
+            menu._pageIndex = page;
+            menu.ChangePage();
+            menu._iconWindowControllers[page].SetCursorIndex(index);
+        }
+
+        /// <summary>
+        /// Focuses the slot again in the same frame and confirms it as the menu's update and the dialog's yes do, inside
+        /// the menu-update scope (EnterScope / LeaveScope, as SelectionMenuControllerUpdate's hook makes it): the
+        /// "already selected" compare (the saved cousin as the menu reads it, against the focused id), then SetCharater,
+        /// then _ischange. False (a FAIL) when the cursor is not on it or the game would refuse it, so the wrong cousin is
+        /// never confirmed.
+        /// </summary>
+        private static bool Confirm(SelectionMenuController menu, int page, int index, int wantId, string who)
+        {
+            FocusSlot(menu, page, index);
+            var f = SelectScreen.Focused(menu);
+            int id = f != null ? (int)f._ITOKONAME : -2;
+            if (id != wantId) { Check($"select: the cursor is on {who} before the confirm", false, $"focused id {id}, not confirming"); return false; }
+            var save = GameRefs.Save;
+            SelectScreen.EnterScope();
+            try
+            {
+                int shown = save != null ? save.GetSelectPlayerId : -1;
+                bool pickable = shown != id;
+                Check($"select: the menu lets {who} be picked (not \"already selected\")", pickable,
+                      $"the saved cousin as the menu reads it {shown}, focused id {id}, marker hooks {SelectScreen.ScopeInstalled}");
+                if (!pickable) return false;
+                Msg($"confirming {who} inside the menu-update scope (SetCharater, then _ischange = true, as the dialog's yes does)");
+                menu.SetCharater();
+            }
+            finally { SelectScreen.LeaveScope(null); }
+            menu._ischange = true;
+            return true;
+        }
+
+        /// <summary>After a confirm: the counters are back to zero and the net never fired.</summary>
+        private static void CheckAfterConfirm(string who)
+        {
+            var g = GameRefs.Global;
+            int now = g != null ? g._nowCharacterID : -1;
+            // Both confirms in this test store the Prince.
+            Check($"select: GlobalManager's current cousin is the Prince (0) after {who}", now == 0,
+                  $"_nowCharacterID {now}, _selectPlayerId {RawSavedCousin()}");
+            var save = GameRefs.Save;
+            int plain = save != null ? save.GetSelectPlayerId : -1;
+            Check($"select: the scope is closed after {who}", SelectScreen.ScopeDepth == 0 && SelectScreen.SuspendDepth == 0 && plain == RawSavedCousin(),
+                  $"scope depth {SelectScreen.ScopeDepth}, suspended {SelectScreen.SuspendDepth}, GetSelectPlayerId outside the menu {plain}");
+            Check($"select: the net never fired (through {who})", SelectScreen.NetFirings == 0, $"{SelectScreen.NetFirings} firing(s)");
+        }
+
+        /// <summary>Why the game may not rebuild the walking cousin, for a FAIL line.</summary>
+        private static string RebuildHint() =>
+            $"menu opened {(_openedDirectly ? "directly (SetActive)" : "the game's way")}, ship menu event {(_eventDirect ? "activated directly" : "activated by the ship")}, " +
+            $"cousin change {(_changeDirect ? "started directly" : "started by the ship")}; {ShipEvents()}";
+
+        private static int RawSavedCousin()
+        {
+            var save = GameRefs.Save;
+            return save != null ? save._selectPlayerId : -1;
+        }
+
+        private static IEnumerable<object> SelectScreenTest()
+        {
+            var walker = Contexts.PlazaOwnerModel();
+            // Set up by CheckFlag (nobody chosen), so information, not a check.
+            Msg($"at the start: settings {Settings.Describe()}, worn {Chosen.On}, dressing hooks {Hooks.Installed}, walking cousin dressed {Dresser.FindFor(walker) != null}, saved cousin {RawSavedCousin()}");
+            Check("select: the select screen's hooks are in place", SelectScreen.Ready, SelectScreen.Ready ? $"{SelectScreen.Expected} hooks" : "see the log");
+            if (!SelectScreen.Ready) yield break;
+            Check("select: the marker hooks are out while the settings name nobody", !SelectScreen.ScopeInstalled);
+
+            // ---- open the menu and look at her slot
+            SelectionMenuController menu = null;
+            foreach (var x in OpenMenu(m => menu = m)) yield return x;
+            if (menu == null) yield break;
+            var slot = SelectScreen.SlotOf(menu);
+            var wins = menu._iconWindowControllers;
+            LogSlotTree("her slot (page 4, slot 14)", slot);
+            LogSlotTree("Young King's slot (page 4, slot 7)", Slot(menu, SelectScreen.Page, 6));
+            CheckSlot(menu, slot);
+
+            Msg($"to page 4, slot 14 (ChangePage to {SelectScreen.Page}, cursor {SelectScreen.Slot})");
+            FocusSlot(menu, SelectScreen.Page, SelectScreen.Slot);
+            yield return 1.5f;
+            var focused = SelectScreen.Focused(menu);
+            Check("select: the cursor is on her slot", focused != null && slot != null && focused.Pointer == slot.Pointer,
+                  $"page {menu._pageIndex}, cursor {wins[SelectScreen.Page]._cursorIndex}, focused id {(focused != null ? (int)focused._ITOKONAME : -2)}");
+            Shot("select_page4_" + _style);
+            yield return PictureTaken();
+
+            // ---- confirm her, as the dialog's yes does
+            IntPtr before = WalkerPtr();
+            if (!Confirm(menu, SelectScreen.Page, SelectScreen.Slot, SelectScreen.ModId, "Burda")) yield break;
+            Check("select: the save still holds the Prince", RawSavedCousin() == 0 && Chosen.SavedCousin() == 0,
+                  $"_selectPlayerId {RawSavedCousin()}, GetSelectPlayerId {Chosen.SavedCousin()}, GlobalManager._nowCharacterID {GameRefs.Global?._nowCharacterID}");
+            Check("select: the settings say Burda, picked on the screen", Settings.Active && Settings.CousinId == Cousin && Settings.OnScreen && Settings.Style == _style,
+                  $"{Settings.Describe()}, on the screen {Settings.OnScreen}");
+            Msg($"settings kept in memory only (set up by the test): {Settings.MemoryOnly}");
+            Check("select: she is worn and the dressing hooks are in place", Chosen.On && Hooks.Installed && Hooks.Count == Hooks.Expected,
+                  $"worn {Chosen.On}, {Hooks.Count} of {Hooks.Expected} hooks");
+            Check("select: her slot carries 100 again", slot != null && (int)slot._ITOKONAME == SelectScreen.ModId, slot != null ? "id " + (int)slot._ITOKONAME : "no slot");
+            CheckAfterConfirm("the confirm of Burda");
+            yield return 0.2f;   // a LateUpdate: the marker hooks follow the settings there
+            Check("select: the marker hooks come in once the settings name her", SelectScreen.ScopeInstalled,
+                  SelectScreen.ScopeInstalled ? "in" : SelectScreen.ScopeFailed ? "they could not be made (see the log)" : "not in");
+
+            // ---- the ship's new walking cousin, after the game's swap
+            _changeDirect = false;
+            foreach (var x in AwaitRebuild(before, "the confirm")) yield return x;
+            Check("select: the game rebuilt the walking cousin", WalkerPtr() != IntPtr.Zero && WalkerPtr() != before, RebuildHint());
+            yield return 3f;
+            foreach (var x in Ship()) yield return x;
+
+            // ---- the Prince's slot: she turns off
+            before = WalkerPtr();
+            menu = null;
+            foreach (var x in OpenMenu(m => menu = m)) yield return x;
+            if (menu == null) yield break;
+            wins = menu._iconWindowControllers;
+            slot = SelectScreen.SlotOf(menu);
+            if (_reopened)
+            {
+                // The game did not close and reset the screen, so its markers are the ones from before the confirm. The
+                // screen places them in IconWindowController.SetIcon when it opens; called here directly for the two pages.
+                Msg("[direct] refreshing the current-cousin markers: IconWindowController.SetIcon on pages 1 and 4 (the screen was not reset by the game)");
+                wins[0].SetIcon();
+                wins[SelectScreen.Page].SetIcon();
+            }
+            var marks = wins[SelectScreen.Page]._selectIcon;
+            bool marked = marks != null && SelectScreen.Slot < marks.Length && marks[SelectScreen.Slot] != null && marks[SelectScreen.Slot].activeSelf;
+            var princeMarks = wins[0]._selectIcon;
+            bool princeMarked = princeMarks != null && princeMarks.Length > 0 && princeMarks[0] != null && princeMarks[0].activeSelf;
+            Check("select: the current-cousin marker sits on her slot, not the Prince's", marked && !princeMarked,
+                  $"hers {marked}, the Prince's {princeMarked}, marker hooks {SelectScreen.ScopeInstalled}, screen reset by the game {!_reopened}");
+            LogSlotTree("her slot, reopened", slot);
+
+            // ---- the scope and its suspension, on the save as it is now (the Prince, with her worn)
+            var save = GameRefs.Save;
+            int inScope, suspended;
+            SelectScreen.EnterScope();
+            try
+            {
+                inScope = save != null ? save.GetSelectPlayerId : -1;
+                using (SelectScreen.Suspended()) suspended = save != null ? save.GetSelectPlayerId : -1;
+            }
+            finally { SelectScreen.LeaveScope(null); }
+            Check("select: inside the menu's scope the saved Prince reads as her id, and as the Prince when suspended", inScope == SelectScreen.ModId && suspended == 0,
+                  $"in the scope {inScope}, suspended {suspended}, depth after {SelectScreen.ScopeDepth}");
+
+            Msg("to page 1, slot 1 (the Prince)");
+            FocusSlot(menu, 0, 0);
+            yield return 1f;
+            if (!Confirm(menu, 0, 0, 0, "the Prince")) yield break;
+            Check("select: the Prince turns her off", !Settings.Active && !Chosen.On && !Hooks.Installed,
+                  $"settings {Settings.Describe()}, worn {Chosen.On}, dressing hooks {Hooks.Installed}");
+            // The Prince's id is 0, so the save holding 0 here is information, not a check.
+            Msg("the save after the Prince: _selectPlayerId " + RawSavedCousin());
+            CheckAfterConfirm("the confirm of the Prince");
+            yield return 0.2f;
+            Check("select: the marker hooks go once the settings name nobody", !SelectScreen.ScopeInstalled);
+            _changeDirect = false;
+            foreach (var x in AwaitRebuild(before, "the Prince")) yield return x;
+            yield return 3f;
+            var plain = Contexts.PlazaOwnerModel();
+            bool rebuilt = plain != null && plain.Pointer != before;
+            Check("select: the rebuilt walking cousin is the game's own", rebuilt && Dresser.FindFor(plain) == null && !Dresser.CarriesMarker(plain),
+                  !rebuilt ? "the game did not rebuild it; " + RebuildHint() : $"dressed {Dresser.FindFor(plain) != null}, marker {Dresser.CarriesMarker(plain)}");
+            Check("select: the net never fired (whole run)", SelectScreen.NetFirings == 0, $"{SelectScreen.NetFirings} firing(s)");
+            Shot("select_prince_" + _style);
+            yield return PictureTaken();
+        }
+
+        /// <summary>Slot <paramref name="index"/> of window <paramref name="page"/>, or null.</summary>
+        private static ShortcutIconData Slot(SelectionMenuController menu, int page, int index)
+        {
+            var wins = menu._iconWindowControllers;
+            if (wins == null || page >= wins.Length || wins[page] == null) return null;
+            var slots = wins[page]._shortcutIconDatas;
+            return slots != null && index < slots.Length ? slots[index] : null;
+        }
+
+        /// <summary>The width an Image is drawn at in its slot's units (rect width times its own scale and its parents' up to the slot).</summary>
+        private static float DrawnWidth(UnityEngine.UI.Image img, Transform slot)
+        {
+            float w = img.rectTransform.rect.width;
+            for (var t = img.transform; t != null && t.Pointer != slot.Pointer; t = t.parent) w *= t.localScale.x;
+            return w;
+        }
+
+        /// <summary>Her slot on the open menu: id 100, the found look with her sprite, her name, no New mark.</summary>
+        private static void CheckSlot(SelectionMenuController menu, ShortcutIconData slot)
+        {
+            if (slot == null) { Check("select: page 4 has slot 14", false); return; }
+            Check("select: page 4 slot 14 carries the mod's id 100", (int)slot._ITOKONAME == SelectScreen.ModId, "id " + (int)slot._ITOKONAME);
+            var c = SelectScreen.Cousin;
+            var want = CousinIcon.Get(c, Settings.StyleFor(c));
+            var icon = slot._iconImage;
+            bool back = slot._backImage != null && slot._backImage.enabled;
+            bool iconOn = icon != null && icon.enabled && icon.gameObject.activeInHierarchy;
+            var sprite = icon != null ? icon.sprite : null;
+            bool hers = want != null && sprite != null && sprite.Pointer == want.Pointer;
+            var tex = sprite != null ? sprite.texture : null;
+            bool textured = tex != null && tex.width > 0;
+            float alpha = icon != null ? icon.color.a : 0f;
+            // Drawn at a found slot's size: Young King's icon on the same page, or the scene's 1024 x 0.2.
+            var king = Slot(menu, SelectScreen.Page, 6);
+            float kingWidth = king != null && king._iconImage != null ? DrawnWidth(king._iconImage, king.transform) : 0f;
+            float refWidth = kingWidth > 1f ? kingWidth : 204.8f;
+            float width = icon != null ? DrawnWidth(icon, slot.transform) : 0f;
+            bool sized = width >= refWidth * 0.5f;
+            bool blank = slot._blankImage != null && slot._blankImage.enabled;
+            bool hatena = slot._hatenaImage != null && slot._hatenaImage.enabled;
+            bool released = slot._oujiData != null && slot._oujiData._isReleased;
+            Check("select: her slot draws her icon (icon shown with her sprite and texture, at a found slot's size, opaque)", iconOn && hers && textured && sized && alpha > 0.5f,
+                  $"icon shown {iconOn}, her sprite {hers} ({(sprite != null ? sprite.name : "none")}), texture {(tex != null ? tex.name + " " + tex.width + "x" + tex.height : "none")}, " +
+                  $"drawn {U.F(width)} wide (Young King's {U.F(kingWidth)}), alpha {U.F(alpha)}");
+            Check("select: her slot looks found (back on, blank and question mark off, released)", back && !blank && !hatena && released,
+                  $"back {back}, blank {blank}, question mark {hatena}, released {released}");
+            string name = slot._oujiData != null ? slot._oujiData._name : null;
+            string text = slot._text != null ? slot._text.text : null;
+            Check("select: her name is Burda", name == "Burda" && text == "Burda", $"OujiData name '{name}', text '{text}'");
+            var news = menu._iconWindowControllers[SelectScreen.Page]._newIcon;
+            bool isNew = news != null && SelectScreen.Slot < news.Length && news[SelectScreen.Slot] != null && news[SelectScreen.Slot].activeSelf;
+            Check("select: her slot has no New mark", !isNew);
+        }
+
+        /// <summary>The ship's menu event pieces and their state, for the log.</summary>
+        private static string ShipEvents()
+        {
+            try
+            {
+                var omb = UnityEngine.Object.FindObjectOfType<OrderToMenuBehavior>();
+                var etm = UnityEngine.Object.FindObjectOfType<EventToMenuController>();
+                var etc = UnityEngine.Object.FindObjectOfType<EventToChangeCharacter>();
+                var ctrl = GameRefs.SaveCtrl;
+                var h = omb != null ? omb.m_UpdateHandler : null;
+                var och = etm != null ? etm.m_OrderChangeChara : null;
+                return $"OrderToMenuBehavior {(omb == null ? "none" : $"OrderEvent {omb.OrderEvent}, update handler {(h == null ? "none" : h.UpdateHandle.ToString())}")}, " +
+                       $"save idle (ActionWait) {(ctrl != null ? ctrl.ActionWait().ToString() : "-")}, " +
+                       $"EventToMenuController {(etm == null ? "none" : "active " + etm.m_ActiveEventHandle)}, " +
+                       $"OrderToChangeCharacter {(och == null ? "none" : "OrderEvent " + och.OrderEvent)}, " +
+                       $"EventToChangeCharacter {(etc == null ? "none" : $"active {etc.m_ActiveEventHandle}, step {etc.m_ChangeCharaEnum}")}";
+            }
+            catch (Exception e) { return "ship events unreadable: " + e.Message; }
+        }
+
+        /// <summary>OrderToMenuBehavior.Update's own conditions for taking up an open menu: no order yet, its update handler on, the save idle.</summary>
+        private static bool MenuAllowed()
+        {
+            var omb = UnityEngine.Object.FindObjectOfType<OrderToMenuBehavior>();
+            if (omb == null) return true;
+            var h = omb.m_UpdateHandler;
+            var ctrl = GameRefs.SaveCtrl;
+            return !omb.OrderEvent && (h == null || h.UpdateHandle) && (ctrl == null || ctrl.ActionWait());
+        }
+
+        /// <summary>
+        /// Opens The Prince &amp; Cousins on the ship by the game's own calls. Once OrderToMenuBehavior.Update would take up an
+        /// open menu: the pause menu (MenuManager.ActiveMenu(0)), which OrderToMenuBehavior.Update answers by making the
+        /// ship's EventToMenuController active (it runs MenuManager.MenuStateUpdate and later sees _ischange); then the Mates
+        /// entry (MenuController.SelectUpdate(1)), which MenuStateUpdate turns into SelectionMenuController.SetActive(true).
+        /// A step the game does not take is logged with the state and then made by a direct call, labelled [direct].
+        /// A screen still open from before is used as it is (<see cref="_reopened"/>).
+        /// </summary>
+        private static IEnumerable<object> OpenMenu(Action<SelectionMenuController> got)
+        {
+            MenuManager mm = null;
+            try { mm = SingletonMonoBehaviour<MenuManager>.instance; } catch { }
+            if (mm == null) mm = UnityEngine.Object.FindObjectOfType<MenuManager>();
+            var menu = mm != null ? mm._selectionMenuController : null;
+            if (menu == null) { Check("select: the ship has the select screen", false, mm == null ? "no MenuManager" : "MenuManager has no SelectionMenuController"); yield break; }
+            var mc = mm._menuController;
+            var ev = UnityEngine.Object.FindObjectOfType<EventToMenuController>();
+            string State() => $"_menuState {(int)mm._menuState}, _isActiveMenu {mm._isActiveMenu}, pause menu canvas {(mc != null ? mc._canvasActive.ToString() : "-")}, " +
+                              $"takes input {(mc != null ? mc._onUpdate.ToString() : "-")}, select screen open {menu.ActiveSelf}, _ischange {menu._ischange}; {ShipEvents()}";
+            _reopened = false;
+            if (menu.ActiveSelf)
+            {
+                Msg("the select screen is still open (the game did not close and reset it): " + State());
+                _reopened = true;
+                yield return 1f;
+                Check("select: the select screen is open", menu.ActiveSelf, State());
+                got(menu);
+                yield break;
+            }
+            _openedDirectly = _eventDirect = false;
+            yield return Until(MenuAllowed, 30f, "the ship to take up an open menu (OrderToMenuBehavior.Update's conditions)", false);
+            Msg("opening the pause menu (MenuManager.ActiveMenu(0)): " + State());
+            mm.ActiveMenu(0);
+            yield return Until(() => ev == null || ev.m_ActiveEventHandle, 3f, "OrderToMenuBehavior.Update to make the ship's EventToMenuController active", false);
+            if (ev != null && !ev.m_ActiveEventHandle)
+            {
+                var omb = UnityEngine.Object.FindObjectOfType<OrderToMenuBehavior>();
+                Msg("[direct] the ship did not take up the open menu (" + State() + "); calling OrderToMenuBehavior.OrderActiveEvent(), " +
+                    "the activation its Update makes when the menu is open");
+                _eventDirect = true;
+                if (omb != null) omb.OrderActiveEvent();
+                else Msg("no OrderToMenuBehavior found");
+                yield return Until(() => ev.m_ActiveEventHandle, 3f, "the ship's EventToMenuController to be active", false);
+            }
+            yield return Until(() => mc == null || mc._onUpdate, 10f, "the pause menu to take input", false);
+            Msg("choosing Mates (MenuController.SelectUpdate(1)): " + State());
+            if (mc != null) mc.SelectUpdate(1);
+            yield return Until(() => menu.ActiveSelf, 15f, "the select screen to open the game's way", false);
+            if (!menu.ActiveSelf)
+            {
+                Msg("[direct] the game's way did not open it (" + State() + "); opening it directly (SelectionMenuController.SetActive(true))");
+                _openedDirectly = true;
+                menu.SetActive(true);
+                yield return Until(() => menu.ActiveSelf, 10f, "the select screen to open", false);
+            }
+            yield return 2f;   // its fade-in
+            Check("select: the select screen is open", menu.ActiveSelf, State());
+            if (menu.ActiveSelf) got(menu);
+        }
+
+        /// <summary>
+        /// After a confirm: the ship's EventToMenuController sees _ischange and starts the cousin change
+        /// (OrderToChangeCharacter.OrderActiveEvent; EventToChangeCharacter then rebuilds the walker through ModelLoader).
+        /// If the change has not started within 5 s, it is logged and started by that same call, directly ([direct]).
+        /// </summary>
+        private static IEnumerable<object> AwaitRebuild(IntPtr before, string after)
+        {
+            var etm = UnityEngine.Object.FindObjectOfType<EventToMenuController>();
+            var etc = UnityEngine.Object.FindObjectOfType<EventToChangeCharacter>();
+            bool Rebuilt() => WalkerPtr() != IntPtr.Zero && WalkerPtr() != before;
+            bool Started() => Rebuilt() || (etc != null && etc.m_ActiveEventHandle);
+            yield return Until(Started, 5f, "the ship to start the cousin change after " + after, false);
+            if (!Started())
+            {
+                var och = etm != null ? etm.m_OrderChangeChara : null;
+                Msg($"[direct] the ship did not start the cousin change ({ShipEvents()}); calling OrderToChangeCharacter.OrderActiveEvent(), " +
+                    "what EventToMenuController.Update does when it sees _ischange");
+                _changeDirect = true;
+                if (och != null) och.OrderActiveEvent();
+                else Msg("no OrderToChangeCharacter found");
+            }
+            yield return Until(Rebuilt, 60f, "the game to rebuild the walking cousin after " + after, false);
+            Msg("after the change: " + ShipEvents());
+        }
+
+        /// <summary>Every child of a slot, for the log: active flags, Image, sprite and texture, colour, rect and scale.</summary>
+        private static void LogSlotTree(string label, ShortcutIconData slot)
+        {
+            if (slot == null) { Msg(label + ": no slot"); return; }
+            try
+            {
+                var root = slot.transform;
+                Msg($"{label} ({root.name}, id {(int)slot._ITOKONAME}): active {root.gameObject.activeSelf}/{root.gameObject.activeInHierarchy}, scale {U.F(root.localScale)}");
+                LogChildren(root, 1);
+            }
+            catch (Exception e) { Msg(label + ": unreadable: " + e.Message); }
+        }
+
+        private static void LogChildren(Transform t, int depth)
+        {
+            for (int i = 0; i < t.childCount; i++)
+            {
+                var c = t.GetChild(i);
+                var go = c.gameObject;
+                string img = "";
+                var im = go.GetComponent<UnityEngine.UI.Image>();
+                if (im != null)
+                {
+                    var sp = im.sprite;
+                    var tex = sp != null ? sp.texture : null;
+                    var col = im.color;
+                    img = $", Image enabled {im.enabled}, sprite {(sp != null ? sp.name : "none")}, texture {(tex != null ? tex.name + " " + tex.width + "x" + tex.height : "none")}, " +
+                          $"colour ({U.F(col.r)}, {U.F(col.g)}, {U.F(col.b)}, {U.F(col.a)})";
+                }
+                var rt = c.TryCast<RectTransform>();
+                string rect = rt != null ? $", rect {U.F(rt.rect.width)}x{U.F(rt.rect.height)}" : "";
+                Msg($"{new string(' ', depth * 2)}[{i}] {c.name}: active {go.activeSelf}/{go.activeInHierarchy}{img}{rect}, scale {U.F(c.localScale)}");
+                if (depth < 3) LogChildren(c, depth + 1);
+            }
         }
 
         // ---------------------------------------------------------------- a story stage and its results

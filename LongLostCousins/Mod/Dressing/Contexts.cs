@@ -36,7 +36,7 @@ namespace LongLostCousins.Dressing
         /// <summary>MainGameOuji.InitializeOuji, before it: the single-player stage's player model.</summary>
         public static void StagePlayer(MainGameOuji ouji)
         {
-            if (!Settings.Active || ouji == null) return;
+            if (!Chosen.Now || ouji == null) return;
             string skip = StageSkip();
             if (skip != null)
             {
@@ -53,7 +53,7 @@ namespace LongLostCousins.Dressing
         /// <summary>UIMainGameOuji.Initialize, before it: the stage HUD's copy of the player.</summary>
         public static void StageHud(UIMainGameOuji ui)
         {
-            if (!Settings.Active || ui == null) return;
+            if (!Chosen.Now || ui == null) return;
             string skip = StageSkip();
             if (skip != null) { Log.Debug("stage HUD copy not dressed: " + skip); return; }
             Dresser.Dress(ui.gameObject, "stage HUD");
@@ -62,7 +62,7 @@ namespace LongLostCousins.Dressing
         /// <summary>MainGameOuji.InitializeOujiByEndingCore, before it: the ending's player model.</summary>
         public static void Ending(MainGameOuji ouji)
         {
-            if (!Settings.Active || ouji == null || GameRefs.IsMultiplay) return;
+            if (!Chosen.Now || ouji == null || GameRefs.IsMultiplay) return;
             // Only the ending manager calls this, on its own player model; a different model there is left alone.
             var end = GameRefs.Global?.EndGameMan;
             var own = end != null ? end.Ouji : null;
@@ -75,7 +75,7 @@ namespace LongLostCousins.Dressing
         /// <summary>UIOuji.Initialize, before it: the Plaza's and ship's UI copy of the walking cousin.</summary>
         public static void PlazaUi(UIOuji ui)
         {
-            if (!Settings.Active || ui == null) return;
+            if (!Chosen.Now || ui == null) return;
             Dresser.Dress(ui.gameObject, "Plaza UI");
         }
 
@@ -166,7 +166,7 @@ namespace LongLostCousins.Dressing
         /// <summary>OujiPresent.Start, after it: a cousin model's first frame. Queued to be sorted in LateUpdate.</summary>
         public static void PresentStarted(OujiPresent p)
         {
-            if (!Settings.Active || p == null) return;
+            if (!Chosen.Now || p == null) return;
             var go = p.gameObject;
             if (Pending.Count >= 64) Pending.RemoveAt(0);
             Pending.Add(new Queued { Go = go, Ptr = go.Pointer, At = Time.unscaledTime });
@@ -246,7 +246,7 @@ namespace LongLostCousins.Dressing
 
         public static void ResultCharacterSet(Transform holder, string who)
         {
-            if (!Settings.Active) return;
+            if (!Chosen.Now) return;
             ResultSets++;
             if (holder == null) { Log.Info($"{who}.SetPlayCharacter ran with no holder"); return; }
             Log.Info($"{who}.SetPlayCharacter ran: {holder.childCount} object(s) under {holder.name}");
@@ -279,7 +279,7 @@ namespace LongLostCousins.Dressing
         /// <summary>MelonMod.OnLateUpdate, before the dressed models are kept in step. Never throws.</summary>
         public static void LateTick()
         {
-            if (!Settings.Active) return;
+            if (!Chosen.On) return;
             float now = Time.unscaledTime;
             try { WatchOwner(now); }
             catch (Exception e) { Log.Debug("watching the walking cousin: " + e.Message); _ownerTries = -1; }

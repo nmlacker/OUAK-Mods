@@ -77,7 +77,7 @@ namespace LongLostCousins.Dressing
 
                 var marker = MarkerOf(model);
                 if (marker != null) return Rebind(modelRoot, model, marker, context);
-                if (!Settings.Active) return null;
+                if (!Chosen.Now) return null;
                 var assets = CousinAssets.Get(Settings.Cousin, Settings.Style);
                 if (assets == null) return Soft(context, modelRoot, $"{Settings.Describe()} can't be read (see the log)");
                 return Build(modelRoot, model, assets, context);

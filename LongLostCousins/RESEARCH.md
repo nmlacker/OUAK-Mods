@@ -259,6 +259,31 @@ Things learned on the way:
 - The data's FACE chunk carries OUAK's 23 face-slot names and its 28-group slot table. They are names and small
   indices needed to work with the game, not game art, so they stay in the data (my call).
 
+### Slice two: Burda on the game's select screen (2026-11-20)
+The user asked for her as one more cousin on the game's own "The Prince & Cousins" screen, not a screen of the mod's
+own. She sits in page 4's first free slot (`_iconWindowControllers[3]._shortcutIconDatas[13]`, right after id 74), found
+from the start, with her own icon (one per style, made by `Mod/Tools/render_icons.py`) and the name "Burda".
+
+How does she get there without a new id in the save? The slot carries the mod id 100 only on screen. The confirm
+(`SelectionMenuController.SetCharater`) stores 0, the Prince, and the mod's settings remember Burda. A check just
+before `SaveDataController.SetSaveAction` turns any 100 left in the save data into 0. So do the two Cousin Creator
+writers (`CharacterSelectionManager.EndShortCutMove` and `EndSelectionMove`). She is worn while the settings say Burda
+and the save holds the Prince.
+
+What did the in-game test show? Both styles gave pass=48 fail=4. Her slot draws her icon at the found slots' size, looks
+found, is named Burda and has no New mark. Confirming her keeps 0 in the save, and the safety check never fired. The
+ship rebuilds the walker dressed as her. Reopened, the screen puts the current-cousin marker on her slot. Picking the
+Prince turns her off. The four FAILs are the test's way into the menu: it runs while the title screen is still up, so
+the ship never takes up the menu by itself, and the test opens it with the game's own call instead.
+
+Things learned on the way:
+- A free slot's Icon object has localScale 0.001 (found slots have 0.2), so a sprite put there draws about 1 px wide.
+  The mod copies the scale from a found slot.
+- The current-cousin marker is placed only by `IconWindowController.SetIcon`, which reads `GetSelectPlayerId`. The mod
+  makes that read 100 inside the screen's own calls while she is worn, and those hooks exist only while the settings
+  name her, because the getter has about 65 callers.
+- `GlobalSaveData.CheckNewFlag` throws for an index past its arrays, so the mod answers it for 100.
+
 ### Left undecided (by the user's choice, 2026-11-12)
 - No-name cousins (Robot, Fishbowl, Katamari, Record, Calendar, Red, Black, V-Cousin, Parking, Rainbow).
 - The five names with no known look (Bacbaci, Pandoring, Tempero, Snou, Crio).

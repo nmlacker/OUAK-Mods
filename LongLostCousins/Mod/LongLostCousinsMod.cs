@@ -1,5 +1,6 @@
 using System;
 using LongLostCousins.Dressing;
+using LongLostCousins.Select;
 using LongLostCousins.Test;
 using MelonLoader;
 using OUAKModAPI;
@@ -12,9 +13,10 @@ namespace LongLostCousins
 {
     /// <summary>
     /// Long Lost Cousins: dresses the player's own cousin model as a cousin the game never shipped, built at run time
-    /// from the mod's own data. Slice one has Burda, in the new OUAK style or the old Katamari Forever style.
-    /// Off until a cousin is picked in the mod window's Long Lost Cousins tab: while off, nothing of the game is hooked
-    /// and nothing runs each frame.
+    /// from the mod's own data. It has Burda, in the new OUAK style or the old Katamari Forever style. She is one more
+    /// cousin on the game's own select screen (page 4), and can also be picked in the mod window's Long Lost Cousins tab.
+    /// The select screen's slot hooks are always in place (they add her slot and keep her id out of the save); its marker
+    /// hooks exist only while the settings name her, and the dressing hooks and the per-frame work only while she is worn.
     /// </summary>
     public sealed class LongLostCousinsMod : MelonMod
     {
@@ -28,7 +30,8 @@ namespace LongLostCousins
                 Settings.Load();
                 bool testing = CousinTest.CheckFlag();
                 CousinsTab.Init();
-                if (Settings.Active) Hooks.Install();
+                SelectScreen.Install();
+                Chosen.Refresh();
                 _ready = true;
                 Log.Info($"Long Lost Cousins loaded: {Settings.Describe()}{(testing ? " (cousin test)" : "")}");
             }
@@ -42,7 +45,10 @@ namespace LongLostCousins
 
         public override void OnLateUpdate()
         {
-            if (!_ready || (!Settings.Active && Dresser.Models.Count == 0 && !CousinTest.Running)) return;
+            // No game method is on the stack here: the select screen's counters go back to zero and its marker hooks follow the settings.
+            SelectScreen.LateTick();
+            if (!_ready || (!Settings.Active && !Hooks.Installed && Dresser.Models.Count == 0 && !CousinTest.Running)) return;
+            Chosen.Sync();
             try { Contexts.LateTick(); }
             catch (Exception e) { Log.Debug("contexts: " + e.Message); }
             try { Dresser.LateTick(); }
