@@ -148,6 +148,12 @@ Other per-cousin data:
 
   A new cousin has to resolve in **all** of them. The cleanest way is one hook on `GetItokoPrefabAddressFromID` that maps new ids to the mod's own asset.
 - Animation clips are shared (`0001_OUJI.anim` …). Some cousins have override clips (`0008_OUJI_28.anim` for Kinoko, `_31`, `_57`, `_76` and others). So all cousins share one rig and one set of animation states, and cousins with unusual bodies get extra clips. [catalog; that they share one skeleton is inferred from the clip names]
+- The rig, read from the Prince's prefab (`OUJI01_D`) in the bundles [read from the files]:
+  - 23 joints named `JNT_*` under a node `model`, all at scale 1, every joint at rest at identity (within 0.06°). The numbers are centimetres: the waist rests at 26.345.
+  - The Animator sits on `OUJI_D`, the parent of `model`, with no Avatar, so it is a Generic rig. A clip finds each joint by the CRC32 of its path below the Animator, such as `model/JNT_root/JNT_waist`.
+  - The clips write joint turns, and the waist's position in 99 of 104 clips. One path, used by the two spin clips, matches no node of the Prince.
+  - There are 78 controllers `acOujiNNNN`, none of them an override controller. The Prince's has 113 states and 12 transitions, and two bools, `isArrive` and `isPataPata`.
+  - The code plays a motion by its row in `OujiAnimationSetting_0000` (109 rows): `Animator.Play(state)` with no crossfade, speed = `AnimeSpeed` × the row's speed, then `SetFace` with the row's face group.
 - The `CustomModelParameter` and `ModelDataOUJInn_D_Custom` classes recolour models for the custom-cousin editor. They aren't needed for plain cousins.
 
 ### 2.5 "The Prince & Cousins" screen = character select [traced]
@@ -186,12 +192,13 @@ Other per-cousin data:
   - `CharacterEffect.OujiEffectOffset` (per-cousin effect offsets)
   - multiplayer `NetworkUserInfo` (the cousin id is sent over the network)
 
+- The icons are 1024×1024 DXT5 textures with one mip level, one full-size sprite each at 100 pixels per unit, centre pivot, not in an atlas. They are baked into `CharacterSelection.unity` and drawn at 1024 with a scale of 0.2. [read from the files]
+
 ### 2.6 Not found / not traced yet
-- The icon sprite size and atlas. They're baked into the scene, so they need one in-game measurement: read `_iconImage.sprite.rect` on the select screen.
 - The text table for cousin names (`GlobalManager+0x90`), and whether its keys are ids or string ids (`OujiData.GetTextId`).
 - The `AAItokoGroup` contents (which cousins belong to DLC pack 4).
-- The rig: bone names, scale and Animator controller. Read them from one `OUJInn_D` prefab in game (UnityExplorer, or a read-only probe).
-- Unity version: needed to build AssetBundles. Read it from `globalgamemanagers` or the player log.
+
+Found since: the Unity version is 6000.0.30f1, read from the bundle headers. The rig is in 2.4 and the icon size in 2.5.
 
 ---
 
@@ -202,7 +209,7 @@ Other per-cousin data:
 3. **Select screen:** fill the empty slots on page 4 first, then add pages. Locked cousins show "???" with the "?" flower; found ones show the icon and the name in the normal text style; unused slots stay "-------". For now every Long Lost Cousin starts unlocked. Wait for the user's diagrams.
 4. **Unlock rules:** decided. Cousins are found in custom stages (later), by rolling them up the way the game does with its own cousins (a mod-placed `ItokoSpawnData`-like object). The unlock goes to the mod's own save, not `OujiItokoGet`.
 5. **Multiplayer:** decided. Others see the cousin. The cousin id travels in `NetworkUserInfo`, so a client without the mod would get an unknown id. Fall back to the Prince for those players.
-6. **Before any code:** one read-only in-game probe to measure icon size, the rig and Unity version, using the shared `game.lock` and a 35 s gap. **Only when the API/Patch chat gives the go-ahead.**
+6. **Before any code:** the icon size, the rig and the Unity version are now read from the game's files. One read-only in-game probe is still worth running before code, to see a model imported with the settings in `Models/Burda/NOTES.md` stand next to the Prince. It uses the shared `game.lock` and a 35 s gap. **Only when the API/Patch chat gives the go-ahead.**
 
 ### Decisions (user, 2026-11-12)
 - "Forbidden Cousins" is the community nickname for the KDO-exclusive cousins.
@@ -215,11 +222,48 @@ Other per-cousin data:
 - **The pink name in the mock-up was only a dev note.** Names use the game's normal text style.
 - **Until custom stages exist, every Long Lost Cousin is unlocked from the start.**
 
+### Decisions (user, 2026-11-18)
+- Each cousin model comes in two styles: old (Katamari Forever) and new (OUAK). The first is Burda, in `Models/Burda/`.
+- The user's words: "Use the original Katamari Forever animations as well when selecting the old style." For Burda, the Forever Prince's 160 clips are retargeted onto the old-style rig (joint map in `Models/Burda/burda_rig_spec.json`, `old_style.forever_motions`).
+- Old-style face cards fold back round the octagonal head like Forever's.
+
+### My defaults (2026-11-19, not the user's decisions)
+The user asked me to settle the open points rather than hand them back. These are my choices, and the user can overrule any of them.
+- Which Forever clip plays for each OUAK motion row: `Models/forever_clip_map.json`. 46 of the 81 rows the code asks for get a Forever clip.
+- OUAK's own clips play on the other rows (the car, emotes Forever lacks, the select screen). On the old style the waist is raised by about 7.4, in OUAK's numbers, on the clips that set it.
+- Each state's speed is set so a Forever clip keeps Forever's pace, undoing OUAK's per-row speed.
+- Face cards follow the motion, as in Forever: each Forever motion record carries a face expression. `Models/Burda/face_map.json` maps Forever's 8 expressions and OUAK's 28 face groups onto her faces. Her singing face takes the Prince's whistle.
+- Her full face set (drawn 2026-11-19). The new style has a piece for each of OUAK's 23 face slots, named as OUAK names its own objects (`eye_01_m` … `tear_01_m`, with OUAK's spelling `cheak_01_m`), plus her singing eyes `eye_sing_m`. Three names changed meaning: the earlier `eye_02_m` (singing eyes), `mouth_02_m` (open oval) and `mouth_03_m` (small round) are now `eye_sing_m`, `mouth_05_m` and `mouth_06_m`, and the old names carry OUAK's pieces. The old style has 11 cards, one for each of Forever's 8 expressions among them. Where the old style keeps OUAK's clip, the card follows the face group's mood.
+- The clips are Forever's data and do not ship. The mod reads them from the player's own copy of Katamari Forever at run time, the way REROLL reads KDR.
+- The FBX is in metres with every node at scale 1. It imports into Unity with a scale of 100 and Preserve Hierarchy on (untested).
+
+### Slice one: Burda in the game (2026-11-20)
+The mod's first code is in `Mod/` (see its README). It dresses your own cousin's model as Burda, in either style: the
+game keeps its cousin id, the mod switches the game's renderers off and adds hers, built at run time from data exported
+from the .blend files (`Mod/Cousins/FORMAT.md`). No new ids, no save writes, nothing sent online.
+
+What did the in-game test show? On the Prince's Ship, in As Large As Possible 1 and on the stage screen's copy, both
+styles are dressed, with none of the game's renderers on. Her waist is within 0.0001 cm of where it belongs. Her joints
+turn as the game's do, in world space. The new style's faces follow the game's face groups (0, 9, 10, 12, 15, 17, 26)
+and the old style's cards follow the face map. Fading the player to half fades her too.
+
+What is still unproven? The results and the ending. After the test answers "Are you finished?", the game stays in the
+stage. The mod hooks `ResultMonoSetter.SetPlayCharacter` for the results, but the test hasn't reached it yet.
+
+Things learned on the way:
+- On the ship, `SingletonMonoBehaviour<CharacterManager>.instance` stays unset. The walking character comes from the
+  ship's `PlayCharacterAdominist` instead (as OUAK Multiplayer does).
+- Cousins' rigs aren't all the Prince's. Cousin 06's left shoulder rests at x -5.836 against the Prince's -1.063 (read
+  from both prefabs), 4.775 cm apart, which is what the game showed. She keeps her own joint positions and copies only
+  rotations (and the waist), so that is expected.
+- The data's FACE chunk carries OUAK's 23 face-slot names and its 28-group slot table. They are names and small
+  indices needed to work with the game, not game art, so they stay in the data (my call).
+
 ### Left undecided (by the user's choice, 2026-11-12)
 - No-name cousins (Robot, Fishbowl, Katamari, Record, Calendar, Red, Black, V-Cousin, Parking, Rainbow).
 - The five names with no known look (Bacbaci, Pandoring, Tempero, Snou, Crio).
 
 ### Assets the user will provide (formats confirmed after the in-game probe)
 - **Model:** one per cousin, rigged to the OUAK cousin skeleton and working with its Animator states, delivered as a Unity AssetBundle built with the game's Unity version. FBX + textures also work if the mod side builds the bundle. Optional override clips for unusual bodies, like the game's `_28`/`_76` ones.
-- **Icon:** one per cousin in the select-screen style. Signolo and Kinoko are the reference. Size still to be measured; plan on a transparent PNG.
+- **Icon:** one per cousin in the select-screen style. Signolo and Kinoko are the reference. 1024×1024, the size of the game's own icons; plan on a transparent PNG.
 - **Text:** name, and optionally a description, per cousin.

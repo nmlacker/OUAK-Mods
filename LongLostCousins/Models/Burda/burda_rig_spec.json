@@ -1,0 +1,510 @@
+{
+ "units": "Blender metres, Z up, character faces -Y, +X is her left",
+ "units_in_ouak": "OUAK's numbers are centimetres: the Prince's waist rests at 26.345 under a node of scale 1, and his clips write it there. Her FBX is in metres with every node at scale 1, so it needs a scale of 100 on import to match (unverified in Unity).",
+ "new_style": {
+  "note": "OUAK Prince (OUJI01_D) joint positions as measured",
+  "joints": {
+   "JNT_root": {
+    "head": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "parent": null,
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_waist": {
+    "head": [
+     0.0,
+     0.0,
+     0.26345
+    ],
+    "parent": "JNT_root",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_leg_L": {
+    "head": [
+     0.06163,
+     -0.0,
+     0.26345
+    ],
+    "parent": "JNT_waist",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_knee_L": {
+    "head": [
+     0.06163,
+     -5e-05,
+     0.15756
+    ],
+    "parent": "JNT_leg_L",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_ankle_L": {
+    "head": [
+     0.06163,
+     0.0,
+     0.05912
+    ],
+    "parent": "JNT_knee_L",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_leg_R": {
+    "head": [
+     -0.06163,
+     0.0,
+     0.26345
+    ],
+    "parent": "JNT_waist",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_knee_R": {
+    "head": [
+     -0.06163,
+     -5e-05,
+     0.15756
+    ],
+    "parent": "JNT_leg_R",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_ankle_R": {
+    "head": [
+     -0.06163,
+     0.0,
+     0.05912
+    ],
+    "parent": "JNT_knee_R",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_spine_01": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.38043
+    ],
+    "parent": "JNT_waist",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_spine_02": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.48703
+    ],
+    "parent": "JNT_spine_01",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_shoulder_L": {
+    "head": [
+     0.01062,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_spine_02",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_arm_L": {
+    "head": [
+     0.11263,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_shoulder_L",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_elbow_L": {
+    "head": [
+     0.24425,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_arm_L",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_hand_L": {
+    "head": [
+     0.36771,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_elbow_L",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_shoulder_R": {
+    "head": [
+     -0.01063,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_spine_02",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_arm_R": {
+    "head": [
+     -0.11263,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_shoulder_R",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_elbow_R": {
+    "head": [
+     -0.24425,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_arm_R",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_hand_R": {
+    "head": [
+     -0.36771,
+     -0.0,
+     0.58833
+    ],
+    "parent": "JNT_elbow_R",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_neck": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.63384
+    ],
+    "parent": "JNT_spine_02",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_head": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.74844
+    ],
+    "parent": "JNT_neck",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_mouth": {
+    "head": [
+     -0.0,
+     -0.15459,
+     0.74844
+    ],
+    "parent": "JNT_head",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_nose": {
+    "head": [
+     -0.009,
+     -0.152,
+     0.79444
+    ],
+    "parent": "JNT_head",
+    "source": "measured: OUAK OUJI01_D"
+   },
+   "JNT_antenna": {
+    "head": [
+     0.0,
+     0.01376,
+     1.01461
+    ],
+    "parent": "JNT_head",
+    "source": "measured: OUAK OUJI01_D"
+   }
+  }
+ },
+ "old_style": {
+  "note": "Forever Prince (entry 220) joint positions x 0.2110 (scaled to the OUAK Prince total height), renamed to the OUAK joints; joints Forever lacks are placed by eye",
+  "joints": {
+   "JNT_root": {
+    "head": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "parent": null,
+    "source": "measured: Forever root"
+   },
+   "JNT_waist": {
+    "head": [
+     0.0,
+     0.0,
+     0.3376
+    ],
+    "parent": "JNT_root",
+    "source": "measured: Forever waist"
+   },
+   "JNT_leg_L": {
+    "head": [
+     0.05233,
+     0.0,
+     0.32282
+    ],
+    "parent": "JNT_waist",
+    "source": "measured: Forever thigh_L"
+   },
+   "JNT_knee_L": {
+    "head": [
+     0.05233,
+     -0.0,
+     0.18091
+    ],
+    "parent": "JNT_leg_L",
+    "source": "measured: Forever knee_L"
+   },
+   "JNT_ankle_L": {
+    "head": [
+     0.05233,
+     0.0,
+     0.02129
+    ],
+    "parent": "JNT_knee_L",
+    "source": "measured: Forever foot_L"
+   },
+   "JNT_arm_L": {
+    "head": [
+     0.09604,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_shoulder_L",
+    "source": "measured: Forever shoulder_L"
+   },
+   "JNT_elbow_L": {
+    "head": [
+     0.22206,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_arm_L",
+    "source": "measured: Forever elbow_L"
+   },
+   "JNT_hand_L": {
+    "head": [
+     0.35173,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_elbow_L",
+    "source": "measured: Forever hand_L"
+   },
+   "JNT_shoulder_L": {
+    "head": [
+     0.00904,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_spine_02",
+    "source": "by eye: no Forever joint; OUAK keeps it at 9% of the arm offset, on the arm line"
+   },
+   "JNT_leg_R": {
+    "head": [
+     -0.05233,
+     -0.0,
+     0.32282
+    ],
+    "parent": "JNT_waist",
+    "source": "measured: Forever thigh_R"
+   },
+   "JNT_knee_R": {
+    "head": [
+     -0.05233,
+     -0.0,
+     0.1809
+    ],
+    "parent": "JNT_leg_R",
+    "source": "measured: Forever knee_R"
+   },
+   "JNT_ankle_R": {
+    "head": [
+     -0.05233,
+     0.0,
+     0.02128
+    ],
+    "parent": "JNT_knee_R",
+    "source": "measured: Forever foot_R"
+   },
+   "JNT_arm_R": {
+    "head": [
+     -0.09604,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_shoulder_R",
+    "source": "measured: Forever shoulder_R"
+   },
+   "JNT_elbow_R": {
+    "head": [
+     -0.22206,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_arm_R",
+    "source": "measured: Forever elbow_R"
+   },
+   "JNT_hand_R": {
+    "head": [
+     -0.35173,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_elbow_R",
+    "source": "measured: Forever hand_R"
+   },
+   "JNT_shoulder_R": {
+    "head": [
+     -0.00904,
+     0.00017,
+     0.61861
+    ],
+    "parent": "JNT_spine_02",
+    "source": "by eye: no Forever joint; OUAK keeps it at 9% of the arm offset, on the arm line"
+   },
+   "JNT_spine_01": {
+    "head": [
+     0.0,
+     0.0,
+     0.43876
+    ],
+    "parent": "JNT_waist",
+    "source": "by eye: no Forever joint; at the OUAK fraction (36% from waist to shoulder line)"
+   },
+   "JNT_spine_02": {
+    "head": [
+     0.0,
+     0.0,
+     0.5315
+    ],
+    "parent": "JNT_spine_01",
+    "source": "by eye: no Forever joint; at the OUAK fraction (69%)"
+   },
+   "JNT_neck": {
+    "head": [
+     0.0,
+     0.0,
+     0.63224
+    ],
+    "parent": "JNT_spine_02",
+    "source": "by eye: no Forever joint; at the OUAK fraction (56% from spine_02 to head)"
+   },
+   "JNT_head": {
+    "head": [
+     -0.0,
+     0.00017,
+     0.71139
+    ],
+    "parent": "JNT_neck",
+    "source": "measured: Forever head"
+   },
+   "JNT_mouth": {
+    "head": [
+     0.0,
+     -0.15614,
+     0.71139
+    ],
+    "parent": "JNT_head",
+    "source": "by eye: on the face-card plane at head-joint height"
+   },
+   "JNT_nose": {
+    "head": [
+     0.0,
+     -0.15614,
+     0.77469
+    ],
+    "parent": "JNT_head",
+    "source": "by eye: on the face-card plane, above the mouth"
+   },
+   "JNT_antenna": {
+    "head": [
+     0.0,
+     -0.0247,
+     0.98914
+    ],
+    "parent": "JNT_head",
+    "source": "measured: Forever head_end (inside the antenna)"
+   }
+  },
+  "forever_motions": {
+   "note": "Old style only: Katamari Forever's own motions, retargeted from the Forever Prince's rig. The clips are Forever's data and are not in this folder; a mod would read them from the player's own copy. Each mapped joint takes the Forever joint's rest-to-pose change in world space, rotation unchanged and translation times the scale. Joints not listed stay at rest under their parents.",
+   "source_rig": "Forever Prince (entry 220), 16 joints, 160 clips (pack p1: 110, pack p2: 50), 30 frames per second",
+   "clip_map": "../forever_clip_map.json: which Forever clip plays for each row of OUAK's motion table, with lengths, speeds and why",
+   "scale": 0.211,
+   "scale_units": "metres of Burda per Forever unit; 21.1 in OUAK's centimetre numbers",
+   "map": {
+    "JNT_root": {
+     "forever_joint": "root",
+     "forever_node": 1
+    },
+    "JNT_waist": {
+     "forever_joint": "waist",
+     "forever_node": 11
+    },
+    "JNT_head": {
+     "forever_joint": "head",
+     "forever_node": 18
+    },
+    "JNT_antenna": {
+     "forever_joint": "head_end",
+     "forever_node": 23
+    },
+    "JNT_arm_R": {
+     "forever_joint": "shoulder_R",
+     "forever_node": 19
+    },
+    "JNT_arm_L": {
+     "forever_joint": "shoulder_L",
+     "forever_node": 20
+    },
+    "JNT_leg_R": {
+     "forever_joint": "thigh_R",
+     "forever_node": 21
+    },
+    "JNT_leg_L": {
+     "forever_joint": "thigh_L",
+     "forever_node": 22
+    },
+    "JNT_elbow_R": {
+     "forever_joint": "elbow_R",
+     "forever_node": 24
+    },
+    "JNT_elbow_L": {
+     "forever_joint": "elbow_L",
+     "forever_node": 25
+    },
+    "JNT_knee_R": {
+     "forever_joint": "knee_R",
+     "forever_node": 26
+    },
+    "JNT_knee_L": {
+     "forever_joint": "knee_L",
+     "forever_node": 27
+    },
+    "JNT_hand_R": {
+     "forever_joint": "hand_R",
+     "forever_node": 28
+    },
+    "JNT_hand_L": {
+     "forever_joint": "hand_L",
+     "forever_node": 29
+    },
+    "JNT_ankle_R": {
+     "forever_joint": "foot_R",
+     "forever_node": 30
+    },
+    "JNT_ankle_L": {
+     "forever_joint": "foot_L",
+     "forever_node": 31
+    }
+   },
+   "at_rest": [
+    "JNT_spine_01",
+    "JNT_spine_02",
+    "JNT_neck",
+    "JNT_shoulder_L",
+    "JNT_shoulder_R",
+    "JNT_mouth",
+    "JNT_nose"
+   ]
+  }
+ }
+}

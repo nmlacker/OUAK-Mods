@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Long Lost Cousins: dresses the player's own cousin as a cousin the game never shipped (slice one: Burda, in the new
+    OUAK style or the old Katamari Forever style), built at run time from the mod's own data in Cousins/. Off until a
+    cousin is picked in the mod window's Long Lost Cousins tab. Built on the OUAK Modding API.
+    Shared settings: ../../Directory.Build.props. Installs to Mods (build with -p:NoInstall=true to skip that).
+  -->
+  <PropertyGroup>
+    <AssemblyName>LongLostCousins</AssemblyName>
+    <RootNamespace>LongLostCousins</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\OUAKModAPI\OUAKModAPI.csproj" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The cousins and their models, read from the DLL at run time (Cousins/FORMAT.md). Tools/ is not built. -->
+    <EmbeddedResource Include="Cousins\cousins.json" LogicalName="Cousins/cousins.json" />
+    <EmbeddedResource Include="Cousins\**\*.llcm" LogicalName="Cousins/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Remove="Tools\**" />
+  </ItemGroup>
+</Project>

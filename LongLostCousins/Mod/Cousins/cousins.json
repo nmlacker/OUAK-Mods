@@ -1,0 +1,31 @@
+{
+ "about": "The cousins the mod can dress the player as, one entry each. 'styles' maps a style key to its .llcm file, relative to this folder (format in FORMAT.md). 'build' is read only by Tools/export_llcm.py and Tools/check_llcm.py; its paths are relative to the LongLostCousins folder.",
+ "version": 1,
+ "cousins": [
+  {
+   "id": "burda",
+   "name": "Burda",
+   "styles": {
+    "new": "Burda/burda_new.llcm",
+    "old": "Burda/burda_old.llcm"
+   },
+   "style_names": {
+    "new": "new style (OUAK)",
+    "old": "old style (Katamari Forever)"
+   },
+   "notes": "Cousin 26 of the cancelled Katamari Damacy Online, a singer whose head is a sideways microphone. Both styles use OUAK's 23 joint names and rest at identity. The new style has a piece for each of OUAK's 23 face slots plus her singing eyes; the old style shows one of 11 face cards. The old style plays OUAK's motions for now, with her waist 7.415 cm higher than the Prince's.",
+   "build": {
+    "blend": {
+     "new": "Models/Burda/new_style/Burda_new.blend",
+     "old": "Models/Burda/old_style/Burda_old.blend"
+    },
+    "face_map": "Models/Burda/face_map.json",
+    "rig_spec": "Models/Burda/burda_rig_spec.json",
+    "rig_spec_block": {
+     "new": "new_style",
+     "old": "old_style"
+    }
+   }
+  }
+ ]
+}

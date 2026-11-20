@@ -1,0 +1,1142 @@
+{
+ "about": "Burda's face map. OUAK's code shows a face by turning 23 objects on and off (its face component, MainGameOujiFace), one face group per motion row. Burda's new style has a piece for each of the 23 slots, named as the slot, plus her singing eyes. Her old style shows one of 11 cards: her four, and one for each of Forever's face expressions. Forever picks a card per motion from a face expression byte in each motion record (meaning inferred). All mappings here are mine; nobody has seen them in the game.",
+ "blink": {
+  "ouak": {
+   "blinkEyeType": 2,
+   "blink_eye": "eye_03",
+   "open_seconds": 3.0,
+   "closed_seconds": 0.15
+  },
+  "new_style": "eye_03_m for 0.15 s every 3.0 s on groups that blink",
+  "old_style": "face_3_blink on the same timer while face_1_neutral shows (my default; how Forever blinks is not known)"
+ },
+ "burda_new_pieces": {
+  "eye_01_m": "her usual eyes, half-lidded almonds",
+  "eye_02_m": "half-closed eyes",
+  "eye_03_m": "closed eyes, lines (the blink)",
+  "eye_04_m": "round dot eyes",
+  "eye_05_m": "white eyes",
+  "eye_sing_m": "eyes closed in happy arcs (her singing eyes, an extra)",
+  "face_01_m": "face plate",
+  "face_02_m": "face plate, blue-grey shade under the hair line",
+  "face_03_m": "face plate, red flush under the hair line",
+  "mouth_01_m": "small flat red bar (her usual mouth)",
+  "mouth_02_m": "open, rounded square",
+  "mouth_03_m": "open, arched",
+  "mouth_04_m": "wide open grin",
+  "mouth_05_m": "big open oval (her singing mouth)",
+  "mouth_06_m": "small round mouth",
+  "mouth_07_m": "open with drool",
+  "mouth_08_m": "wavy closed line",
+  "mouth_09_m": "arched closed line",
+  "mouth_10_m": "puckered lips",
+  "mouth_11_m": "wavy open mouth with drool",
+  "angry_01_m": "anger mark, her left upper corner",
+  "cheak_01_m": "blush on both cheeks",
+  "shock_01_m": "gloom lines, her left upper corner",
+  "tear_01_m": "a tear streak under each eye"
+ },
+ "burda_old_cards": {
+  "1": "face_1_neutral",
+  "2": "face_2_singing",
+  "3": "face_3_blink",
+  "4": "face_4_surprised",
+  "5": "face_5_open",
+  "6": "face_6_smile",
+  "7": "face_7_angry",
+  "8": "face_8_blush_open",
+  "9": "face_9_pale",
+  "10": "face_10_blush",
+  "11": "face_11_blush_smile"
+ },
+ "ouak_slots": [
+  {
+   "slot": "eye_01",
+   "ouak_look": "open eyes",
+   "burda_piece": "eye_01_m"
+  },
+  {
+   "slot": "eye_02",
+   "ouak_look": "half-closed eyes",
+   "burda_piece": "eye_02_m"
+  },
+  {
+   "slot": "eye_03",
+   "ouak_look": "closed eyes (the blink)",
+   "burda_piece": "eye_03_m"
+  },
+  {
+   "slot": "eye_04",
+   "ouak_look": "wide round eyes",
+   "burda_piece": "eye_04_m"
+  },
+  {
+   "slot": "eye_05",
+   "ouak_look": "white eyes (no face group uses them)",
+   "burda_piece": "eye_05_m"
+  },
+  {
+   "slot": "face_01",
+   "ouak_look": "face plate",
+   "burda_piece": "face_01_m"
+  },
+  {
+   "slot": "face_02",
+   "ouak_look": "face plate, gloom shade",
+   "burda_piece": "face_02_m"
+  },
+  {
+   "slot": "face_03",
+   "ouak_look": "face plate, red flush",
+   "burda_piece": "face_03_m"
+  },
+  {
+   "slot": "mouth_01",
+   "ouak_look": "the usual mouth",
+   "burda_piece": "mouth_01_m"
+  },
+  {
+   "slot": "mouth_02",
+   "ouak_look": "open mouth, rounded square",
+   "burda_piece": "mouth_02_m"
+  },
+  {
+   "slot": "mouth_03",
+   "ouak_look": "open mouth, arched",
+   "burda_piece": "mouth_03_m"
+  },
+  {
+   "slot": "mouth_04",
+   "ouak_look": "wide open mouth",
+   "burda_piece": "mouth_04_m"
+  },
+  {
+   "slot": "mouth_05",
+   "ouak_look": "big round open mouth",
+   "burda_piece": "mouth_05_m"
+  },
+  {
+   "slot": "mouth_06",
+   "ouak_look": "small oval mouth",
+   "burda_piece": "mouth_06_m"
+  },
+  {
+   "slot": "mouth_07",
+   "ouak_look": "open mouth with drool",
+   "burda_piece": "mouth_07_m"
+  },
+  {
+   "slot": "mouth_08",
+   "ouak_look": "wavy closed line",
+   "burda_piece": "mouth_08_m"
+  },
+  {
+   "slot": "mouth_09",
+   "ouak_look": "arched closed line",
+   "burda_piece": "mouth_09_m"
+  },
+  {
+   "slot": "mouth_10",
+   "ouak_look": "puckered lips",
+   "burda_piece": "mouth_10_m"
+  },
+  {
+   "slot": "mouth_11",
+   "ouak_look": "wavy open mouth with drool",
+   "burda_piece": "mouth_11_m"
+  },
+  {
+   "slot": "angry_01",
+   "ouak_look": "anger mark",
+   "burda_piece": "angry_01_m"
+  },
+  {
+   "slot": "cheak_01",
+   "ouak_look": "blush",
+   "burda_piece": "cheak_01_m"
+  },
+  {
+   "slot": "shock_01",
+   "ouak_look": "gloom lines",
+   "burda_piece": "shock_01_m"
+  },
+  {
+   "slot": "tear_01",
+   "ouak_look": "tears",
+   "burda_piece": "tear_01_m"
+  }
+ ],
+ "ouak_groups": [
+  {
+   "group": 0,
+   "gloss": "normal",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_01",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 52,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_01_m",
+    "overlay": null
+   },
+   "old_style_card": "face_1_neutral"
+  },
+  {
+   "group": 1,
+   "gloss": "rolling",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 12,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "old_style_card": "face_5_open"
+  },
+  {
+   "group": 2,
+   "gloss": "photo/camera",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_04",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 3,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_04_m",
+    "overlay": null
+   },
+   "old_style_card": "face_6_smile"
+  },
+  {
+   "group": 3,
+   "gloss": "dash start",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_05",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 2,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_05_m",
+    "overlay": null
+   },
+   "old_style_card": "face_5_open"
+  },
+  {
+   "group": 4,
+   "gloss": "turning",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 4,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "old_style_card": "face_1_neutral"
+  },
+  {
+   "group": 5,
+   "gloss": "climbing a step",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 6,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "old_style_card": "face_1_neutral"
+  },
+  {
+   "group": 6,
+   "gloss": "dizzy",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_10",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 2,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_10_m",
+    "overlay": null
+   },
+   "old_style_card": "face_3_blink"
+  },
+  {
+   "group": 7,
+   "gloss": "squat",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 0,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "old_style_card": "face_5_open"
+  },
+  {
+   "group": 8,
+   "gloss": "looking around",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_04",
+    "mouth": "mouth_06",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 3,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_06_m",
+    "overlay": null
+   },
+   "old_style_card": "face_4_surprised"
+  },
+  {
+   "group": 9,
+   "gloss": "thrashing",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_04",
+    "mouth": "mouth_05",
+    "overlay": "angry_01"
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_05_m",
+    "overlay": "angry_01_m"
+   },
+   "old_style_card": "face_7_angry"
+  },
+  {
+   "group": 10,
+   "gloss": "joy",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_04",
+    "overlay": "cheak_01"
+   },
+   "blinks": true,
+   "used_by_rows": 5,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_04_m",
+    "overlay": "cheak_01_m"
+   },
+   "old_style_card": "face_8_blush_open"
+  },
+  {
+   "group": 11,
+   "gloss": "power release",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_04",
+    "overlay": "cheak_01"
+   },
+   "blinks": false,
+   "used_by_rows": 0,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_04_m",
+    "overlay": "cheak_01_m"
+   },
+   "old_style_card": "face_8_blush_open"
+  },
+  {
+   "group": 12,
+   "gloss": "tired",
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": "shock_01"
+   },
+   "blinks": false,
+   "used_by_rows": 2,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": "shock_01_m"
+   },
+   "old_style_card": "face_9_pale"
+  },
+  {
+   "group": 13,
+   "gloss": "slumped",
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_04",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "old_style_card": "face_9_pale"
+  },
+  {
+   "group": 14,
+   "gloss": "hanging head",
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_04",
+    "mouth": "mouth_02",
+    "overlay": "tear_01"
+   },
+   "blinks": false,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_02_m",
+    "overlay": "tear_01_m"
+   },
+   "old_style_card": "face_9_pale"
+  },
+  {
+   "group": 15,
+   "gloss": "surprise",
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_04",
+    "mouth": "mouth_05",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 2,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_05_m",
+    "overlay": null
+   },
+   "old_style_card": "face_4_surprised"
+  },
+  {
+   "group": 16,
+   "gloss": "frustrated",
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_02",
+    "mouth": "mouth_08",
+    "overlay": "angry_01"
+   },
+   "blinks": false,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_08_m",
+    "overlay": "angry_01_m"
+   },
+   "old_style_card": "face_7_angry"
+  },
+  {
+   "group": 17,
+   "gloss": "hit by the washbasin",
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": "tear_01"
+   },
+   "blinks": false,
+   "used_by_rows": 0,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": "tear_01_m"
+   },
+   "old_style_card": "face_7_angry"
+  },
+  {
+   "group": 18,
+   "gloss": "miracle eye",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 2,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "old_style_card": "face_1_neutral"
+  },
+  {
+   "group": 19,
+   "gloss": "pouting",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "old_style_card": "face_7_angry"
+  },
+  {
+   "group": 20,
+   "gloss": "eyes and mouth closed",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_03",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 3,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_03_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "old_style_card": "face_3_blink"
+  },
+  {
+   "group": 21,
+   "gloss": "drool",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_11",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_11_m",
+    "overlay": null
+   },
+   "old_style_card": "face_5_open"
+  },
+  {
+   "group": 22,
+   "gloss": "dozing with drool",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_03",
+    "mouth": "mouth_07",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_03_m",
+    "mouth": "mouth_07_m",
+    "overlay": null
+   },
+   "old_style_card": "face_3_blink"
+  },
+  {
+   "group": 23,
+   "gloss": "exasperated",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": null
+   },
+   "old_style_card": "face_5_open"
+  },
+  {
+   "group": 24,
+   "gloss": "expressionless",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_06",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_06_m",
+    "overlay": null
+   },
+   "old_style_card": "face_1_neutral"
+  },
+  {
+   "group": 25,
+   "gloss": "straining",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "used_by_rows": 1,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "old_style_card": "face_7_angry"
+  },
+  {
+   "group": 26,
+   "gloss": "whistling",
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_10",
+    "overlay": null
+   },
+   "blinks": false,
+   "used_by_rows": 1,
+   "note": "my default: Burda sings where the Prince whistles; her singing eyes are already closed, so they do not blink",
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_sing_m",
+    "mouth": "mouth_05_m",
+    "overlay": null
+   },
+   "old_style_card": "face_2_singing"
+  },
+  {
+   "group": 27,
+   "gloss": "bitter face",
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_02",
+    "mouth": "mouth_10",
+    "overlay": "shock_01"
+   },
+   "blinks": false,
+   "used_by_rows": 0,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_10_m",
+    "overlay": "shock_01_m"
+   },
+   "old_style_card": "face_9_pale"
+  }
+ ],
+ "forever_expressions": [
+  {
+   "expression": 0,
+   "gloss": "neutral, small closed mouth",
+   "card": "face_1_neutral",
+   "forever_records_using_it": 78
+  },
+  {
+   "expression": 1,
+   "gloss": "open mouth",
+   "card": "face_5_open",
+   "forever_records_using_it": 22
+  },
+  {
+   "expression": 2,
+   "gloss": "smile",
+   "card": "face_6_smile",
+   "forever_records_using_it": 4
+  },
+  {
+   "expression": 3,
+   "gloss": "angry",
+   "card": "face_7_angry",
+   "forever_records_using_it": 3
+  },
+  {
+   "expression": 4,
+   "gloss": "blush, open mouth",
+   "card": "face_8_blush_open",
+   "forever_records_using_it": 12
+  },
+  {
+   "expression": 5,
+   "gloss": "pale",
+   "card": "face_9_pale",
+   "forever_records_using_it": 7
+  },
+  {
+   "expression": 6,
+   "gloss": "blush, small mouth",
+   "card": "face_10_blush",
+   "forever_records_using_it": 23
+  },
+  {
+   "expression": 7,
+   "gloss": "blush, smile",
+   "card": "face_11_blush_smile",
+   "forever_records_using_it": 9
+  }
+ ],
+ "old_style_rows": [
+  {
+   "row": 0,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 1,
+   "card": "face_9_pale",
+   "from": "forever expression 5"
+  },
+  {
+   "row": 2,
+   "card": "face_9_pale",
+   "from": "forever expression 5"
+  },
+  {
+   "row": 3,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 4,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 5,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 6,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 7,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 8,
+   "card": "face_8_blush_open",
+   "from": "forever expression 4"
+  },
+  {
+   "row": 13,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 14,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 15,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 16,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 17,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 18,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 19,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 20,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 21,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 22,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 23,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 25,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 27,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 28,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 29,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 30,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 31,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 32,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 34,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 35,
+   "card": "face_6_smile",
+   "from": "forever expression 2"
+  },
+  {
+   "row": 36,
+   "card": "face_7_angry",
+   "from": "forever expression 3"
+  },
+  {
+   "row": 37,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 38,
+   "card": "face_3_blink",
+   "from": "OUAK face group 6"
+  },
+  {
+   "row": 39,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 40,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 41,
+   "card": "face_6_smile",
+   "from": "forever expression 2"
+  },
+  {
+   "row": 42,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 45,
+   "card": "face_5_open",
+   "from": "OUAK face group 1"
+  },
+  {
+   "row": 46,
+   "card": "face_5_open",
+   "from": "OUAK face group 1"
+  },
+  {
+   "row": 47,
+   "card": "face_3_blink",
+   "from": "OUAK face group 6"
+  },
+  {
+   "row": 48,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 50,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 54,
+   "card": "face_6_smile",
+   "from": "forever expression 2"
+  },
+  {
+   "row": 55,
+   "card": "face_10_blush",
+   "from": "forever expression 6"
+  },
+  {
+   "row": 57,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 4"
+  },
+  {
+   "row": 58,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 4"
+  },
+  {
+   "row": 60,
+   "card": "face_7_angry",
+   "from": "forever expression 3"
+  },
+  {
+   "row": 61,
+   "card": "face_4_surprised",
+   "from": "OUAK face group 8"
+  },
+  {
+   "row": 62,
+   "card": "face_4_surprised",
+   "from": "OUAK face group 15"
+  },
+  {
+   "row": 63,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 5"
+  },
+  {
+   "row": 65,
+   "card": "face_5_open",
+   "from": "forever expression 1"
+  },
+  {
+   "row": 66,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 67,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 68,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 18"
+  },
+  {
+   "row": 71,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 73,
+   "card": "face_5_open",
+   "from": "OUAK face group 3"
+  },
+  {
+   "row": 74,
+   "card": "face_8_blush_open",
+   "from": "OUAK face group 10"
+  },
+  {
+   "row": 75,
+   "card": "face_6_smile",
+   "from": "OUAK face group 2"
+  },
+  {
+   "row": 85,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 87,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 88,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 89,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 90,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 92,
+   "card": "face_7_angry",
+   "from": "OUAK face group 19"
+  },
+  {
+   "row": 93,
+   "card": "face_9_pale",
+   "from": "forever expression 5"
+  },
+  {
+   "row": 95,
+   "card": "face_5_open",
+   "from": "OUAK face group 21"
+  },
+  {
+   "row": 97,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 98,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 99,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 100,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 101,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 102,
+   "card": "face_7_angry",
+   "from": "OUAK face group 25"
+  },
+  {
+   "row": 103,
+   "card": "face_2_singing",
+   "from": "OUAK face group 26"
+  },
+  {
+   "row": 104,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 105,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  },
+  {
+   "row": 106,
+   "card": "face_1_neutral",
+   "from": "forever expression 0"
+  },
+  {
+   "row": 107,
+   "card": "face_3_blink",
+   "from": "OUAK face group 20"
+  },
+  {
+   "row": 108,
+   "card": "face_1_neutral",
+   "from": "OUAK face group 0"
+  }
+ ],
+ "note_on_names": "Each new-style piece is named as the OUAK slot it fills, so a mod can switch her pieces by OUAK's own names. eye_sing_m is her extra; it shows only where this map says so (group 26)."
+}
