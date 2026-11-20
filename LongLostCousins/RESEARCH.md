@@ -321,6 +321,10 @@ old style 237/0, new style 206/0, old style without Forever 201/0. The save's co
 through confirm, stage load and turning her off; the base was the Prince on the ship, in the stage and in the HUD; her
 joints matched the Forever bake on two states each on the ship, in the stage and in the HUD copy.
 
+What did the final build show? The save rules were hardened after those runs (snapshot first, no fall-back to 0, the
+suspensions always on). On that build: creator and stage in the new style 204/0, stage in the old style with Forever
+237/0, select in the new style 127/4 (the four ship-menu waits). The other runs above were on the build before.
+
 Not proven yet: the Plaza walker and the Plaza swap, OujiStar, Cosmo, the tutorial, the mini theme, the present popup,
 both results screens and the ending (all hooked, none reached by the test); the old style's hat offset (from her model
 data); the HUD scale; Forever's speed on the ship and in the Plaza beyond the idle rows checked.

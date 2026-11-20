@@ -220,8 +220,9 @@ ship to take up the open menu by itself. The test runs on the ship while the tit
 Quit Game, seen in every picture), and the ship's menu handler's update flag stays off the whole time (logged as
 `update handler False`). That the title is what keeps the flag off is a guess, not traced. The
 `[direct]` step after each of them opens it, and every check on her slot, the confirm and the rebuild runs after that.
-Both styles gave pass=48 fail=4 on 2026-11-20, before the saved cousin was kept; the run with the checks above has not
-been made yet.
+With the checks above, on 2026-11-20, `select` gave pass=127 fail=4 in the new style and pass=126 fail=4 in the old
+style with Forever motions. The new-style run was repeated on the final build with the same result. The four FAILs
+were the menu waits each time.
 
 ### What does the forever word check?
 
