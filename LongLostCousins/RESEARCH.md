@@ -273,8 +273,13 @@ and the save holds the Prince.
 What did the in-game test show? Both styles gave pass=48 fail=4. Her slot draws her icon at the found slots' size, looks
 found, is named Burda and has no New mark. Confirming her keeps 0 in the save, and the safety check never fired. The
 ship rebuilds the walker dressed as her. Reopened, the screen puts the current-cousin marker on her slot. Picking the
-Prince turns her off. The four FAILs are the test's way into the menu: it runs while the title screen is still up, so
-the ship never takes up the menu by itself, and the test opens it with the game's own call instead.
+Prince turns her off. The four FAILs are the test's way into the menu: the ship never takes up the menu by itself (its
+menu handler's update flag stays off, and the title screen is up in every picture, which is probably why), so the test
+opens it with the game's own call instead.
+
+Not proven yet: the route a player takes (the test opens the menu and calls the confirm itself), the Plaza and OujiStar
+screens, the Cousin Creator guards and the save check against a real 100 (none reached one), the tab turning her back
+on after a save change, and whether removing the marker hooks fully takes the detour off the getter.
 
 Things learned on the way:
 - A free slot's Icon object has localScale 0.001 (found slots have 0.2), so a sprite put there draws about 1 px wide.

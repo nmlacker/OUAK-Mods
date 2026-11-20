@@ -124,7 +124,8 @@ game's own call, on a line marked `[direct]`. With `stage` too, she is turned on
 
 A `select` run ends with four FAIL lines today, two for each time it opens the menu. All four are the waits for the
 ship to take up the open menu by itself. The test runs on the ship while the title screen is still up ("Press", Options,
-Quit Game), and the ship's menu handler waits until the player has control, so it never takes the menu there. The
+Quit Game, seen in every picture), and the ship's menu handler's update flag stays off the whole time (logged as
+`update handler False`). That the title is what keeps the flag off is a guess, not traced. The
 `[direct]` step after each of them opens it, and every check on her slot, the confirm and the rebuild runs after that.
 Both styles gave pass=48 fail=4 on 2026-11-20.
 
