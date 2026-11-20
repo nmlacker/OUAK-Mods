@@ -91,7 +91,7 @@ namespace LongLostCousins
             if (Chosen.On && !Hooks.Installed) ImUi.Err("The mod's hooks are not in place; see the log.");
             else if (Chosen.On && Hooks.Count < Hooks.Expected) ImUi.Err($"Only {Hooks.Count} of the mod's {Hooks.Expected} hooks could be made; see the log.");
             if (!SelectScreen.Ready) ImUi.Err("Burda could not be added to the game's select screen; see the log. She can still be picked here, " +
-                                              "but on the ship and in the Plaza she is only shown while your own cousin is the Prince.");
+                                              "but on the ship, in the Plaza, on stages and in the ending she is only shown while your own cousin is the Prince.");
             else if (SelectScreen.ScopeFailed) ImUi.Err("The select screen's marker hooks could not be made; see the log. Its current-cousin marker stays " +
                                                         "on your own cousin, and on the ship and in the Plaza she is only shown while that cousin is the Prince.");
             else if (Settings.Active && PrinceBase.Installed && PrinceBase.Count < PrinceBase.Expected)

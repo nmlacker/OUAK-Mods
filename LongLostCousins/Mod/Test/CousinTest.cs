@@ -201,7 +201,7 @@ namespace LongLostCousins.Test
             if (_select) foreach (var x in SelectScreenTest()) yield return x;
             else
             {
-                // Chosen by the flag with nothing recorded: the first worn check records the save's cousin.
+                // Chosen by the flag with nothing recorded: the first save check in a game session (Chosen.CheckSave) records the save's cousin.
                 Msg($"the save holds {Chosen.Describe(RawSavedCousin(), GameRefs.Save?._customPlayerIndex ?? -1)}; worn now: {Chosen.On}; the settings record {Settings.DescribeRecord()}");
                 Check("ship: the settings record the save's cousin", Settings.HasRecord && Settings.Saved == _testCousin && Settings.Custom == _testCustom,
                       $"recorded {Settings.DescribeRecord()} (custom index {Settings.Custom}), the test's {Chosen.Describe(_testCousin, _testCustom)}");
@@ -493,7 +493,8 @@ namespace LongLostCousins.Test
                   $"OujiPresent.Start reads turned to 0 this session {PrinceBase.PresentRewrites}");
         }
 
-        /// <summary>The walking cousin is the test's cousin itself (its OujiPresent id, or a ModelSetup for the Cousin Creator's 999), not dressed.</summary>
+        /// <summary>The walking cousin is the test's cousin itself (its OujiPresent id; for the Cousin Creator's 999 a ModelSetup
+        /// or a non-Prince "_D_Custom" prefab), not dressed.</summary>
         private static void CheckOwnCousin(string what, GameObject walker, bool rebuilt)
         {
             string address;
@@ -502,7 +503,10 @@ namespace LongLostCousins.Test
             Msg($"[direct] Game.GetItokoPrefabAddressFromID({_testCousin}) = {address}");
             int id = PresentId(walker);
             bool setup = walker != null && walker.GetComponentInChildren<ModelSetup>(true) != null;
-            bool own = _testCousin == Chosen.CreatorId ? setup : id == _testCousin;
+            // On the ship the game builds a designed cousin from its base cousin's "_D_Custom" prefab (slice one's runs on
+            // the real slot-3 save, 999 with custom index 9, built OUJI06_D_Custom too); elsewhere it may carry a ModelSetup.
+            bool customPrefab = walker != null && walker.name.Contains("_D_Custom") && id != 0;
+            bool own = _testCousin == Chosen.CreatorId ? setup || customPrefab : id == _testCousin;
             Check($"{what} is {Chosen.Describe(_testCousin, _testCustom)} again, not dressed", rebuilt && walker != null && own && Dresser.FindFor(walker) == null && !Dresser.CarriesMarker(walker),
                   !rebuilt ? "the ship did not rebuild it" : $"{(walker != null ? walker.name : "no model")}, _oujiID {id}, ModelSetup {setup}, dressed {Dresser.FindFor(walker) != null}, marker {Dresser.CarriesMarker(walker)}");
         }

@@ -76,7 +76,9 @@ namespace LongLostCousins
         /// <summary>
         /// True when the settings name a cousin and <paramref name="id"/>/<paramref name="custom"/> is the save she was
         /// picked with. With nothing recorded yet (a settings file from 0.1.0, the test, a pick at the title), the given
-        /// save is recorded now. Call only with a slot loaded.
+        /// save is recorded now. Call only with a slot loaded, and only with the save read through <see cref="Effective"/>:
+        /// the record is made only by CheckSave and the stage/ending load step (<see cref="RecordIfNone"/>); everything
+        /// else (<see cref="Now"/>, the getter's postfix) compares with <see cref="IsRecord"/>.
         /// </summary>
         public static bool Matches(int id, int custom)
         {
@@ -86,16 +88,38 @@ namespace LongLostCousins
                 Settings.Record(id, custom);
                 _checkNow = true;   // the file is written from LateUpdate
             }
-            return id == Settings.Saved && (id != CreatorId || custom == Settings.Custom);
+            return IsRecord(id, custom);
         }
 
-        /// <summary>Worn now, read live: the settings name a cousin, a slot is loaded, and the save holds the cousin she was picked with.</summary>
+        /// <summary>
+        /// The compare alone, never a record: true when the settings name a cousin with a save recorded and
+        /// <paramref name="id"/>/<paramref name="custom"/> is that save. For the getter's postfix, whose answer may be a
+        /// scoped read (stage 20's 0 inside a loader scope) and must never become the record.
+        /// </summary>
+        public static bool IsRecord(int id, int custom) =>
+            Settings.HasRecord && IsStorableId(id) && id == Settings.Saved && (id != CreatorId || custom == Settings.Custom);
+
+        /// <summary>
+        /// The stage's or the ending's load step, before <see cref="Now"/>: with a cousin chosen and nothing recorded yet,
+        /// the save read through <see cref="Effective"/> is recorded. Never throws.
+        /// </summary>
+        public static void RecordIfNone()
+        {
+            try
+            {
+                if (!Settings.Active || Settings.HasRecord || !GameRefs.InGameSession) return;
+                if (Effective(out int id, out int custom) && IsStorableId(id)) Matches(id, custom);
+            }
+            catch (Exception e) { Log.Warn("recording the save's cousin: " + e.Message); }
+        }
+
+        /// <summary>Worn now, read live (a compare, never a record): the settings name a cousin, a slot is loaded, and the save holds the cousin she was picked with.</summary>
         public static bool Now
         {
             get
             {
                 if (!Settings.Active) return false;
-                try { return GameRefs.InGameSession && Effective(out int id, out int custom) && Matches(id, custom); }
+                try { return GameRefs.InGameSession && Effective(out int id, out int custom) && IsRecord(id, custom); }
                 catch { return false; }
             }
         }
@@ -129,7 +153,10 @@ namespace LongLostCousins
         {
             if (!Settings.Active && !Hooks.Installed && !PrinceBase.Zeroed) return;
             float now = Time.unscaledTime;
-            if (!_checkNow && now < _nextSync) return;
+            // With a cousin chosen and nothing recorded yet, every frame: only CheckSave records, so the first scoped load
+            // after a slot is loaded should find the record made.
+            bool unrecorded = Settings.Active && !Settings.HasRecord;
+            if (!_checkNow && !unrecorded && now < _nextSync) return;
             _checkNow = false;
             _nextSync = now + 0.5f;
             try { CheckSave(); }

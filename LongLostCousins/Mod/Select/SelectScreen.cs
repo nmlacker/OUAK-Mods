@@ -18,7 +18,9 @@ namespace LongLostCousins.Select
     /// unchanged, and the mod's settings say Burda, picked on the screen, with that saved cousin recorded.
     /// <para>Two sets of hooks. The slot set is always in place, because this screen is where she is picked: the slot
     /// loop when the menu opens, the confirm, the two mode-1 writers of the saved cousin, and SetSaveAction, where a net
-    /// turns a stray 100 into the recorded cousin before the save is converted to bytes. The scope set exists only while
+    /// turns a stray 100 into a cousin the save held before the save is converted to bytes; and the suspensions of the
+    /// other save paths (DataToConvert.MonoDataToSaveData and both StartSceneLoad steps), so they never depend on the
+    /// Prince-base hooks. The scope set exists only while
     /// the settings name her: the saved-cousin getter's one postfix, two short scopes (the menu's update and the slot
     /// icons' refresh) in which the recorded cousin reads as 100, so the current-cousin marker sits on her slot and the
     /// player's own cousin can be picked again, and the guide's name. The same postfix answers 0 inside the Prince-base
@@ -38,8 +40,11 @@ namespace LongLostCousins.Select
         public const int Page = 3, Slot = 13;
         /// <summary>The cousin of cousins.json the slot shows.</summary>
         public const string CousinId = "burda";
-        /// <summary>The slot set: window and slot Initialize, CheckNewFlag, SetCharater, EndShortCutMove, EndSelectionMove, SetSaveAction.</summary>
-        public const int Expected = 7;
+        /// <summary>
+        /// The slot set: window and slot Initialize, CheckNewFlag, SetCharater, EndShortCutMove, EndSelectionMove, SetSaveAction,
+        /// MonoDataToSaveData, and the stage's and the ending's StartSceneLoad steps.
+        /// </summary>
+        public const int Expected = 10;
         /// <summary>The scope set: the saved-cousin getter, the two scopes, SetIconNameText.</summary>
         public const int ScopeExpected = 4;
         /// <summary>The scale of a found slot's icon (Ouji_7's Icon in the OujiShip scene); a free slot's icon is 0.001.</summary>
@@ -51,9 +56,14 @@ namespace LongLostCousins.Select
         private struct Swapped { public ShortcutIconData Slot; public int Custom; }
         private static readonly List<Swapped> _swapped = new();
         private static OujiModelCreate _swappedModel;
-        // Her confirm: the save's cousin and custom index when it began, put back in SetSaveAction and the finalizer.
-        private static bool _writeBack;
-        private static int _backId, _backCustom;
+        // A confirm under way: the save's cousin and custom index read first thing in SetCharater's prefix (_snap: read and
+        // storable). The net puts them back over a stray 100; her confirm (_writeBack) also puts them back if the game changed them.
+        private static bool _snap, _writeBack;
+        private static int _snapId, _snapCustom;
+        // The last storable cousin and custom index LateTick read from the save's fields in this game session: the net's
+        // fallback outside a confirm (or when the confirm's read failed).
+        private static bool _hasGood;
+        private static int _goodId, _goodCustom;
 
         /// <summary>The slot set is in place (the slot is only added then).</summary>
         public static bool Ready => _complete;
@@ -91,7 +101,13 @@ namespace LongLostCousins.Select
                     & Set.Hook(typeof(CharacterSelectionManager), nameof(CharacterSelectionManager.EndSelectionMove), typeof(SelectScreen),
                                nameof(BeforeEndSelectionMove), null, nameof(FinallyEndMove), Type.EmptyTypes)
                     & Set.Hook(typeof(SaveDataController), nameof(SaveDataController.SetSaveAction), typeof(SelectScreen),
-                               nameof(BeforeSetSaveAction), null, nameof(FinallySetSaveAction), new[] { typeof(int), typeof(bool) });
+                               nameof(BeforeSetSaveAction), null, nameof(FinallySetSaveAction), new[] { typeof(int), typeof(bool) })
+                    & Set.Hook(typeof(DataToConvert), nameof(DataToConvert.MonoDataToSaveData), typeof(SelectScreen),
+                               nameof(BeforeSaveConvert), null, nameof(LeaveSuspension), new[] { typeof(SaveInfoMonoData) })
+                    & Set.Hook(typeof(MainGameManager._StartSceneLoad_d__229), nameof(MainGameManager._StartSceneLoad_d__229.MoveNext), typeof(SelectScreen),
+                               nameof(BeforeStageLoadStep), null, nameof(LeaveSuspension), Type.EmptyTypes)
+                    & Set.Hook(typeof(EndingGameManager._StartSceneLoad_d__112), nameof(EndingGameManager._StartSceneLoad_d__112.MoveNext), typeof(SelectScreen),
+                               nameof(BeforeEndingLoadStep), null, nameof(LeaveSuspension), Type.EmptyTypes);
             if (!ok || Set.Count != Expected)
             {
                 Log.Error($"only {Set.Count} of the select screen's {Expected} hooks could be made; Burda is not added to the screen (pick her in the tab)");
@@ -104,14 +120,18 @@ namespace LongLostCousins.Select
         }
 
         /// <summary>
-        /// MelonMod.OnLateUpdate, first thing: no game method is on the stack, so the counters go back to zero and the
-        /// scope set follows the settings (in while they name her, out when they stop). Never throws.
+        /// MelonMod.OnLateUpdate, first thing: no game method is on the stack, so the counters go back to zero, no confirm
+        /// is under way, the save's cousin is noted for the net, and the scope set follows the settings (in while they
+        /// name her, out when they stop). Never throws.
         /// </summary>
         public static void LateTick()
         {
             _depth = 0;
             _suspend = 0;
+            _writeBack = false;
+            _snap = false;
             if (!_complete) return;
+            NoteSave();
             try
             {
                 bool want = Settings.Active && Settings.CousinId == CousinId;
@@ -149,7 +169,28 @@ namespace LongLostCousins.Select
             Log.Info("marker hooks removed (the settings no longer name " + CousinId + ")");
         }
 
-        /// <summary>A save path begins (PrinceBase's hooks): no rewrite of the saved cousin until <see cref="SuspendLeave"/>.</summary>
+        /// <summary>
+        /// Every frame from LateTick: the save's cousin and custom index, read from the fields, kept as the net's fallback
+        /// when the id is one the save may hold (not 100, not negative). Forgotten outside a game session, since another
+        /// slot may be loaded next.
+        /// </summary>
+        private static void NoteSave()
+        {
+            try
+            {
+                if (!GameRefs.InGameSession) { _hasGood = false; return; }
+                var save = GameRefs.Save;
+                if (save == null) return;
+                int id = save._selectPlayerId;
+                if (!Chosen.IsStorableId(id)) return;
+                _goodId = id;
+                _goodCustom = save._customPlayerIndex;
+                _hasGood = true;
+            }
+            catch (Exception e) { Failed("noting the save's cousin", e); }
+        }
+
+        /// <summary>A save path begins: no rewrite of the saved cousin until <see cref="SuspendLeave"/>.</summary>
         public static void SuspendEnter() => _suspend++;
         public static void SuspendLeave() { if (_suspend > 0) _suspend--; }
 
@@ -309,16 +350,41 @@ namespace LongLostCousins.Select
 
         /// <summary>
         /// The save's cousin and custom index now, read from the fields: what her slot stands for while the game reads it.
-        /// A save that holds no storable id (the net keeps 100 out, so never seen) gives the Prince.
+        /// False, and logged, when there is no save object or it holds an id no slot stands for (100 or -1; the net keeps
+        /// 100 out, so never seen): her slot is then left as it is and the net puts a cousin the save held back. Nothing
+        /// is recorded from here.
         /// </summary>
-        private static void SaveNow(out int id, out int custom)
+        private static bool SaveNow(out int id, out int custom)
         {
             var save = GameRefs.Save;
-            id = save != null ? save._selectPlayerId : 0;
-            custom = save != null ? save._customPlayerIndex : 0;
-            if (Chosen.IsStorableId(id)) return;
-            if (Once.Add("unstorable" + id)) Log.Warn($"the save holds {id}, which no slot stands for; her slot stands for the Prince in this confirm");
-            id = 0;
+            id = save != null ? save._selectPlayerId : -1;
+            custom = save != null ? save._customPlayerIndex : -1;
+            if (save != null && Chosen.IsStorableId(id)) return true;
+            if (Once.Add("unstorable" + id))
+                Log.Warn(save == null ? "no save object to read the cousin from; her slot is left as it is in this call"
+                                      : $"the save holds {id}, which no slot stands for; her slot is left as it is in this call and the net puts a cousin the save held back");
+            return false;
+        }
+
+        /// <summary>SetCharater's prefix, first thing: the save as this confirm finds it, or no snapshot (never a made-up 0).</summary>
+        private static void TakeSnapshot()
+        {
+            _snap = false;
+            try { _snap = SaveNow(out _snapId, out _snapCustom); }
+            catch (Exception e) { Failed("SetCharater (reading the save)", e); }
+        }
+
+        /// <summary>
+        /// The cousin the net puts back: the save as the confirm under way found it, else the last one <see cref="NoteSave"/>
+        /// read from the save. False when neither is known.
+        /// </summary>
+        private static bool Known(out int id, out int custom, out string from)
+        {
+            if (_snap) { id = _snapId; custom = _snapCustom; from = "the save's cousin when this confirm began"; return true; }
+            if (_hasGood) { id = _goodId; custom = _goodCustom; from = "the last cousin seen in the save"; return true; }
+            id = custom = -1;
+            from = null;
+            return false;
         }
 
         /// <summary>
@@ -358,9 +424,10 @@ namespace LongLostCousins.Select
 
         /// <summary>
         /// The net: the save and GlobalManager must never hold the mod's id. Each is checked and fixed on its own, and each
-        /// fix is counted in <see cref="NetFirings"/> and logged as an error. A 100 in the save becomes the cousin recorded
-        /// when she was picked (with its custom index for 999); with nothing recorded, the Prince, the one id every save may
-        /// hold. Reads the fields, not the getter.
+        /// fix is counted in <see cref="NetFirings"/> and logged as an error. A 100 in the save becomes a cousin the save
+        /// itself held (<see cref="Known"/>: the confirm's snapshot, else the last one seen; with its custom index for 999);
+        /// a 100 in GlobalManager becomes the save's cousin, or that same known one. With nothing known, the field is left
+        /// as it is (never a made-up 0). Reads the fields, not the getter.
         /// </summary>
         private static void Net(string where)
         {
@@ -369,19 +436,29 @@ namespace LongLostCousins.Select
                 var save = GameRefs.Save;
                 if (save != null && save._selectPlayerId == ModId)
                 {
-                    bool recorded = Settings.HasRecord;
-                    save._selectPlayerId = recorded ? Settings.Saved : 0;
-                    if (recorded && Settings.Saved == Chosen.CreatorId) save._customPlayerIndex = Settings.Custom;
                     NetFirings++;
-                    Log.Error($"the save held the mod's id 100 at {where}; set back to {(recorded ? "the recorded " + Settings.DescribeRecord() : "the Prince (nothing was recorded)")} (net firing {NetFirings})");
+                    if (Known(out int id, out int custom, out string from))
+                    {
+                        save._selectPlayerId = id;
+                        if (id == Chosen.CreatorId) save._customPlayerIndex = custom;
+                        Log.Error($"the save held the mod's id 100 at {where}; set back to {Chosen.Describe(id, custom)}, {from} (net firing {NetFirings})");
+                    }
+                    else Log.Error($"the save held the mod's id 100 at {where} and no cousin the save held is known; left as it is (net firing {NetFirings})");
                 }
                 var g = GameRefs.Global;
                 if (g != null && g._nowCharacterID == ModId)
                 {
-                    int id = save != null && Chosen.IsStorableId(save._selectPlayerId) ? save._selectPlayerId : 0;
-                    g._nowCharacterID = id;
                     NetFirings++;
-                    Log.Error($"GlobalManager held the mod's id 100 at {where}; set back to {id} (net firing {NetFirings})");
+                    int id;
+                    string from;
+                    if (save != null && Chosen.IsStorableId(save._selectPlayerId)) { id = save._selectPlayerId; from = "the save's cousin"; }
+                    else if (!Known(out id, out _, out from))
+                    {
+                        Log.Error($"GlobalManager held the mod's id 100 at {where} and no cousin the save held is known; left as it is (net firing {NetFirings})");
+                        return;
+                    }
+                    g._nowCharacterID = id;
+                    Log.Error($"GlobalManager held the mod's id 100 at {where}; set back to {id}, {from} (net firing {NetFirings})");
                 }
             }
             catch (Exception e) { Failed("net at " + where, e); }
@@ -393,14 +470,14 @@ namespace LongLostCousins.Select
         /// </summary>
         private static void WriteBack(string where)
         {
-            if (!_writeBack) return;
+            if (!_writeBack || !_snap) return;
             try
             {
                 var save = GameRefs.Save;
-                if (save == null || (save._selectPlayerId == _backId && save._customPlayerIndex == _backCustom)) return;
-                Log.Warn($"her confirm left the save at cousin {save._selectPlayerId} (custom index {save._customPlayerIndex}) at {where}; put back to {_backId} ({_backCustom})");
-                save._selectPlayerId = _backId;
-                save._customPlayerIndex = _backCustom;
+                if (save == null || (save._selectPlayerId == _snapId && save._customPlayerIndex == _snapCustom)) return;
+                Log.Warn($"her confirm left the save at cousin {save._selectPlayerId} (custom index {save._customPlayerIndex}) at {where}; put back to {_snapId} ({_snapCustom})");
+                save._selectPlayerId = _snapId;
+                save._customPlayerIndex = _snapCustom;
                 WriteBacks++;
             }
             catch (Exception e) { Failed("write back at " + where, e); }
@@ -411,29 +488,28 @@ namespace LongLostCousins.Select
         /// her slot and in the focused slot, focused or not, so the game stores what the save already holds; and the
         /// settings say Burda, picked on the screen, with that cousin recorded, when she is the one focused. Any other slot
         /// turns her off. The rewrites are suspended (SetCharater reads the saved cousin for GlobalManager, and its save
-        /// write, SetSaveAction, runs inside it).
+        /// write, SetSaveAction, runs inside it). The save is read first of all, into the snapshot the swap, the record
+        /// and the net use; without one (unreadable, or no storable id) her slot keeps 100, the net puts a cousin the save
+        /// held back, and the record waits for the next check.
         /// </summary>
         public static void BeforeSetCharater(SelectionMenuController __instance)
         {
+            TakeSnapshot();
             _suspend++;
             _writeBack = false;
             ShortcutIconData focused = null;
             bool pickedHer = false;
-            int id = 0, custom = 0;
             // The swap first and on its own: nothing after it may leave 100 in a slot the game is about to store.
             try
             {
                 PutBack();
-                SaveNow(out id, out custom);
                 focused = Focused(__instance);
                 pickedHer = focused != null && (int)focused._ITOKONAME == ModId;
-                Swap(focused, id, custom);
-                Swap(SlotOf(__instance), id, custom);
-                if (pickedHer)
+                if (_snap)
                 {
-                    _writeBack = true;
-                    _backId = id;
-                    _backCustom = custom;
+                    Swap(focused, _snapId, _snapCustom);
+                    Swap(SlotOf(__instance), _snapId, _snapCustom);
+                    _writeBack = pickedHer;
                 }
             }
             catch (Exception e) { Failed("SetCharater (slot)", e); }
@@ -443,8 +519,17 @@ namespace LongLostCousins.Select
                 var c = Cousin;
                 if (pickedHer && c != null)
                 {
-                    Settings.Choose(c.Id, Settings.StyleFor(c), onScreen: true, saved: id, custom: custom);
-                    Log.Info($"{c.Name} picked on the select screen; the save keeps {Chosen.Describe(id, custom)}");
+                    if (_snap)
+                    {
+                        Settings.Choose(c.Id, Settings.StyleFor(c), onScreen: true, saved: _snapId, custom: _snapCustom);
+                        Log.Info($"{c.Name} picked on the select screen; the save keeps {Chosen.Describe(_snapId, _snapCustom)}");
+                    }
+                    else
+                    {
+                        Settings.Choose(c.Id, Settings.StyleFor(c), onScreen: true);
+                        Chosen.CheckSoon();
+                        Log.Info($"{c.Name} picked on the select screen; the save's cousin could not be read here, so it is recorded at the next check");
+                    }
                 }
                 else if (Settings.Active)
                 {
@@ -480,6 +565,7 @@ namespace LongLostCousins.Select
             Net("SetCharater");
             WriteBack("the end of SetCharater");
             _writeBack = false;
+            _snap = false;
             if (_suspend > 0) _suspend--;
             return __exception;
         }
@@ -493,7 +579,7 @@ namespace LongLostCousins.Select
             try
             {
                 PutBack();
-                SaveNow(out int id, out int custom);
+                if (!SaveNow(out int id, out int custom)) return;
                 var menu = __instance._selectionMenuController;
                 Swap(Focused(menu), id, custom);
                 Swap(SlotOf(menu), id, custom);
@@ -520,7 +606,7 @@ namespace LongLostCousins.Select
                 if (models == null || i < 0 || i >= models.Length || models[i] == null) return;
                 var m = models[i];
                 if ((int)m.TOKONAME != ModId) return;
-                SaveNow(out int id, out _);
+                if (!SaveNow(out int id, out _)) return;
                 m.TOKONAME = (ItokoSpawnData.ITOKONAME)id;
                 _swappedModel = m;
             }
@@ -549,6 +635,41 @@ namespace LongLostCousins.Select
 
         /// <summary>SetSaveAction, always last: the suspension ends.</summary>
         public static Exception FinallySetSaveAction(Exception __exception)
+        {
+            if (_suspend > 0) _suspend--;
+            return __exception;
+        }
+
+        // ---------------------------------------------------------------- the other save paths
+
+        /// <summary>DataToConvert.MonoDataToSaveData copies the saved cousin into the save's bytes: no rewrite in there.</summary>
+        public static void BeforeSaveConvert() => _suspend++;
+
+        /// <summary>
+        /// A StartSceneLoad step of the stage or the ending, before it: the getter's rewrites are suspended for the step
+        /// (stage 20 keeps the getter's answer and copies it back to the save later), and, while the Prince-base hooks are
+        /// in, PrinceBase sets the run-time cousin id for the step (<see cref="PrinceBase.ZeroForLoad"/>).
+        /// </summary>
+        public static void BeforeStageLoadStep()
+        {
+            _suspend++;
+            LoadStep("stage");
+        }
+
+        public static void BeforeEndingLoadStep()
+        {
+            _suspend++;
+            LoadStep("ending");
+        }
+
+        private static void LoadStep(string what)
+        {
+            try { if (PrinceBase.Installed) PrinceBase.ZeroForLoad(what); }
+            catch (Exception e) { Failed(what + " load", e); }
+        }
+
+        /// <summary>MonoDataToSaveData and the StartSceneLoad steps, always last: the suspension ends, also when the game's method threw.</summary>
+        public static Exception LeaveSuspension(Exception __exception)
         {
             if (_suspend > 0) _suspend--;
             return __exception;
@@ -612,7 +733,8 @@ namespace LongLostCousins.Select
             {
                 if (Environment.CurrentManagedThreadId != _mainThread || Settings.CousinId != CousinId || !GameRefs.InGameSession) return;
                 var save = GameRefs.Save;
-                if (save == null || !Chosen.Matches(__result, save._customPlayerIndex)) return;
+                // A compare only: a scoped read (stage 20's 0 in a loader scope, say) never becomes the record.
+                if (save == null || !Chosen.IsRecord(__result, save._customPlayerIndex)) return;
                 if (PrinceBase.Depth > 0)
                 {
                     if (__result != 0) { __result = 0; PrinceBase.CountRewrite(); }

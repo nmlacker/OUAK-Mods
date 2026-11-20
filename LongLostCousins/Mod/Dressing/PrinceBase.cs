@@ -16,9 +16,11 @@ namespace LongLostCousins.Dressing
     /// cousin once, into ModelLoader._playerNow), the saved-cousin getter answers 0. The getter's one postfix is
     /// SelectScreen.AfterGetSelectPlayerId; this class holds the loader scope it reads (<see cref="Depth"/>), and
     /// OujiPresent.Start opens the same scope on the models those loads made (Hooks.BeforePresentStart).</para>
-    /// <para>The getter's rewrites are suspended inside every save path: SaveDataController.SetSaveAction and
-    /// SelectionMenuController.SetCharater (SelectScreen), DataToConvert.MonoDataToSaveData and both StartSceneLoad steps
-    /// (stage 20 keeps the getter's answer and later copies it back to the save). Suspension beats both scopes.</para>
+    /// <para>The getter's rewrites are suspended inside every save path: SaveDataController.SetSaveAction,
+    /// SelectionMenuController.SetCharater, DataToConvert.MonoDataToSaveData and both StartSceneLoad steps (stage 20 keeps
+    /// the getter's answer and later copies it back to the save). Those hooks are SelectScreen's always-installed slot set,
+    /// so they never depend on this class; its StartSceneLoad prefixes call <see cref="ZeroForLoad"/> while these hooks
+    /// are in. Suspension beats both scopes.</para>
     /// <para>The Plaza swap: CharacterMove.ChangeItokoHatoko undresses the model that becomes a cousin walking about, and
     /// CharacterMove.ChangeOuji has her taken off at the next LateUpdate (the save then holds the new cousin).</para>
     /// <para>The hooks exist while the settings name her or a dressed model is alive (the swap must undress it even after
@@ -33,11 +35,11 @@ namespace LongLostCousins.Dressing
         private static bool _failed;
 
         /// <summary>
-        /// SetUpPlayCharacterModel, HirobaLoad's MoveNext, the two StartSceneLoad MoveNexts, MonoDataToSaveData,
-        /// ChangeItokoHatoko, ChangeOuji; and the other loaders of the player's model (<see cref="OtherLoaders"/>): the star
-        /// map's two, Cosmo's, the mini theme's, the present collection popup's, and the AA results' asset step.
+        /// SetUpPlayCharacterModel, HirobaLoad's MoveNext, ChangeItokoHatoko, ChangeOuji; and the other loaders of the
+        /// player's model (<see cref="OtherLoaders"/>): the star map's two, Cosmo's, the mini theme's, the present collection
+        /// popup's, and the AA results' asset step. (The StartSceneLoad steps and MonoDataToSaveData are SelectScreen's.)
         /// </summary>
-        public const int Expected = 13;
+        public const int Expected = 10;
         public static bool Installed => _set != null;
         public static int Count => _set?.Count ?? 0;
 
@@ -87,12 +89,6 @@ namespace LongLostCousins.Dressing
                      nameof(EnterLoader), null, nameof(LeaveLoader), new[] { typeof(Vector3) });
             set.Hook(typeof(SelectHirobaLoad._HirobaLoad_d__15), nameof(SelectHirobaLoad._HirobaLoad_d__15.MoveNext), typeof(PrinceBase),
                      nameof(EnterLoader), null, nameof(LeaveLoader), Type.EmptyTypes);
-            set.Hook(typeof(MainGameManager._StartSceneLoad_d__229), nameof(MainGameManager._StartSceneLoad_d__229.MoveNext), typeof(PrinceBase),
-                     nameof(BeforeStageLoadStep), null, nameof(AfterLoadStep), Type.EmptyTypes);
-            set.Hook(typeof(EndingGameManager._StartSceneLoad_d__112), nameof(EndingGameManager._StartSceneLoad_d__112.MoveNext), typeof(PrinceBase),
-                     nameof(BeforeEndingLoadStep), null, nameof(AfterLoadStep), Type.EmptyTypes);
-            set.Hook(typeof(DataToConvert), nameof(DataToConvert.MonoDataToSaveData), typeof(PrinceBase),
-                     nameof(BeforeSaveConvert), null, nameof(AfterSaveConvert), new[] { typeof(SaveInfoMonoData) });
             set.Prefix(typeof(CharacterMove), nameof(CharacterMove.ChangeItokoHatoko), typeof(PrinceBase), nameof(BeforeChangeItokoHatoko), Type.EmptyTypes);
             set.Postfix(typeof(CharacterMove), nameof(CharacterMove.ChangeOuji), typeof(PrinceBase), nameof(AfterChangeOuji), Type.EmptyTypes);
             OtherLoaders(set);
@@ -168,18 +164,16 @@ namespace LongLostCousins.Dressing
 
         // ---------------------------------------------------------------- stage and ending
 
-        public static void BeforeStageLoadStep() => LoadStep("stage");
-        public static void BeforeEndingLoadStep() => LoadStep("ending");
-
         /// <summary>
-        /// A StartSceneLoad step, before it: the getter's rewrites are suspended for the step (stage 20 keeps its answer and
-        /// copies it back to the save later), and while she is worn the run-time cousin id is 0, so the step builds the Prince.
+        /// A StartSceneLoad step, before it (called from SelectScreen's prefix, after it suspended the getter's rewrites for
+        /// the step, and only while these hooks are in): while she is worn the run-time cousin id is 0, so the step builds
+        /// the Prince.
         /// </summary>
-        private static void LoadStep(string what)
+        public static void ZeroForLoad(string what)
         {
-            SelectScreen.SuspendEnter();
             try
             {
+                Chosen.RecordIfNone();
                 if (GameRefs.IsMultiplay || !Chosen.Now) return;
                 var g = GameRefs.Global;
                 if (g == null) return;
@@ -191,23 +185,6 @@ namespace LongLostCousins.Dressing
                 Log.Info($"{what} load: GlobalManager._nowCharacterID {was} set to 0, so the {what} builds the Prince under her (the save keeps {Settings.DescribeRecord()})");
             }
             catch (Exception e) { Failed(what + " load", e); }
-        }
-
-        public static Exception AfterLoadStep(Exception __exception)
-        {
-            SelectScreen.SuspendLeave();
-            return __exception;
-        }
-
-        // ---------------------------------------------------------------- the save conversion
-
-        /// <summary>DataToConvert.MonoDataToSaveData copies the saved cousin into the save's bytes: no rewrite in there.</summary>
-        public static void BeforeSaveConvert() => SelectScreen.SuspendEnter();
-
-        public static Exception AfterSaveConvert(Exception __exception)
-        {
-            SelectScreen.SuspendLeave();
-            return __exception;
         }
 
         // ---------------------------------------------------------------- the Plaza swap
