@@ -32,12 +32,18 @@ namespace LongLostCousins.Dressing
         /// <summary>The joint index the FOLW offset applies to, and the offset.</summary>
         public readonly int FollowJoint = -1;
         public readonly Vector3 FollowOffset;
+        /// <summary>How the player's presents and the stage HUD fit her in this style (cousins.json "fit").</summary>
+        public readonly StyleFit Fit;
+        /// <summary>Her antenna piece (new style: antena_m), which follows the game's antenna; -1 when the antenna is part of another mesh.</summary>
+        public readonly int AntennaMesh = -1;
 
         private CousinAssets(CousinEntry c, string style, LlcmModel m)
         {
             Cousin = c;
             Style = style;
             Model = m;
+            Fit = c.FitOf(style);
+            AntennaMesh = m.MeshIndex("antena_m");
             ShownExtras = m.Face.AllShown();
             SometimesHidden = m.Face.AllHidden();
             if (m.Face.Groups.Length > 0)

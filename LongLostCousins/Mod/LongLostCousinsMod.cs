@@ -29,6 +29,9 @@ namespace LongLostCousins
             {
                 Settings.Load();
                 bool testing = CousinTest.CheckFlag();
+                // Katamari Forever's motions for the old style, read and baked off the main thread (a test without the word forever: not used).
+                ForeverMotions.Skip = testing && !CousinTest.UsesForever;
+                ForeverMotions.Start("at start");
                 CousinsTab.Init();
                 SelectScreen.Install();
                 Chosen.Refresh();
@@ -47,7 +50,11 @@ namespace LongLostCousins
         {
             // No game method is on the stack here: the select screen's counters go back to zero and its marker hooks follow the settings.
             SelectScreen.LateTick();
-            if (!_ready || (!Settings.Active && !Hooks.Installed && Dresser.Models.Count == 0 && !CousinTest.Running)) return;
+            if (!_ready) return;
+            ForeverMotions.Poll();
+            // The Prince-base scope goes back to zero too, and its hooks follow the settings and the dressed models.
+            PrinceBase.LateTick();
+            if (!Settings.Active && !Hooks.Installed && !PrinceBase.Installed && !PrinceBase.Zeroed && Dresser.Models.Count == 0 && !CousinTest.Running) return;
             Chosen.Sync();
             try { Contexts.LateTick(); }
             catch (Exception e) { Log.Debug("contexts: " + e.Message); }

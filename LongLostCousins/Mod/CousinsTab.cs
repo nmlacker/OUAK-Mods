@@ -12,6 +12,8 @@ namespace LongLostCousins
     internal static class CousinsTab
     {
         private static IDisposable _tab;
+        // What the player types for the Forever folder; emptied once used, so the tab never shows a folder already set.
+        private static string _foreverInput = "";
 
         public static void Init()
         {
@@ -22,8 +24,8 @@ namespace LongLostCousins
         {
             ImUi.Title("Long Lost Cousins");
             ImUi.Hint("Play as a cousin the game never shipped. Burda is also one more cousin on the game's own select screen " +
-                      "(The Prince & Cousins, page 4): picking her there makes you Burda, and the game's save keeps the Prince " +
-                      "in her place. Picking her here dresses whichever cousin you are now. Either way nothing new goes into your save.");
+                      "(The Prince & Cousins, page 4). Picking her there or here makes you Burda, and the game's save keeps your own " +
+                      "cousin: nothing in the save changes. Under her the game builds the Prince, whoever your own cousin is.");
 
             ImUi.Header("Who are you?");
             if (ImGui.RadioButton("Off (the game's own cousin)", !Settings.Active)) Choose(null, null);
@@ -37,8 +39,9 @@ namespace LongLostCousins
                     if (ImGui.RadioButton(c.StyleLabel(s.Key) + "##" + c.Id + "/" + s.Key, on) && (!on || !Chosen.On)) Choose(c.Id, s.Key);
                 }
             if (Settings.MemoryOnly) ImUi.Hint("The cousin test is running: this choice is not saved.");
-            if (Settings.OnScreen) ImUi.Hint("Picked on the select screen." + (Chosen.On ? "" :
-                " She is off for now: the game's save holds another cousin than the Prince. Pick her again on the select screen, or here."));
+            if (Settings.OnScreen) ImUi.Hint("Picked on the select screen.");
+            ImUi.Hint("She comes off by herself when your save's cousin changes: another cousin picked on the select screen, a " +
+                      "swap in the Plaza, the Cousin Creator, or another save slot loaded. Your own cousin is back then.");
 
             ImUi.Hint("The change shows the next time the game loads your cousin: the next stage, the next visit to the Plaza " +
                       "or the Prince's Ship, or a cousin change there.");
@@ -48,7 +51,32 @@ namespace LongLostCousins
             ImUi.Hint("Not dressed: the select screen's own pictures, online battles, OUAK Multiplayer (others there see the game's " +
                       "own cousin), the mini theme, the present collection, the Cousin Creator, the star map, Cosmo, the " +
                       "tutorial Plaza, and the stage where the game always plays the Prince.");
-            ImUi.Hint("The old style plays OUAK's motions for now; her own Katamari Forever motions come later.");
+            ImUi.Hint("The new style moves with the Prince's own motions. The old style moves with Katamari Forever's motions, read " +
+                      "from your own copy of Katamari Forever (set its folder below), and with this game's motions where Forever has none.");
+
+            ImUi.Header("Katamari Forever's motions (old style)");
+            if (ForeverMotions.Status == ForeverStatus.Ready) ImUi.Ok(ForeverMotions.Describe());
+            else ImUi.Hint(ForeverMotions.Describe());
+            ImUi.Hint("The folder is your PS3 disc folder of Katamari Forever (the one holding PS3_GAME, or PS3_GAME or USRDIR itself). " +
+                      "The mod reads four files from it at each start and keeps nothing; the folder stays in settings.json and is never shown or logged.");
+            ImGui.TextUnformatted(Settings.ForeverFolder != null ? "Folder: set" : "Folder: not set");
+            ImGui.SetNextItemWidth(-1f);
+            ImGui.InputTextWithHint("##llcforever", "paste the Katamari Forever folder here", ref _foreverInput, 1024);
+            if (ImUi.Button("Use this folder", !string.IsNullOrWhiteSpace(_foreverInput), ImUi.Px(160f)))
+            {
+                Settings.SetForeverFolder(_foreverInput);
+                _foreverInput = "";
+                ForeverMotions.Start("a folder set in the tab");
+            }
+            ImGui.SameLine();
+            if (ImUi.Button("Forget the folder", Settings.ForeverFolder != null, ImUi.Px(160f)))
+            {
+                Settings.SetForeverFolder(null);
+                ForeverMotions.Start("the folder cleared in the tab");
+            }
+            ImGui.SameLine();
+            if (ImUi.Button("Read it again", Settings.ForeverFolder != null && ForeverMotions.Status != ForeverStatus.Reading, ImUi.Px(160f)))
+                ForeverMotions.Start("read again from the tab");
 
             ImUi.Header("Now");
             int live = Dresser.Models.Count;
@@ -62,17 +90,34 @@ namespace LongLostCousins
             }
             if (Chosen.On && !Hooks.Installed) ImUi.Err("The mod's hooks are not in place; see the log.");
             else if (Chosen.On && Hooks.Count < Hooks.Expected) ImUi.Err($"Only {Hooks.Count} of the mod's {Hooks.Expected} hooks could be made; see the log.");
-            if (!SelectScreen.Ready) ImUi.Err("Burda could not be added to the game's select screen; see the log. She can still be picked here.");
-            else if (SelectScreen.ScopeFailed) ImUi.Err("The select screen's marker hooks could not be made; see the log. Its current-cousin marker stays on the Prince.");
+            if (!SelectScreen.Ready) ImUi.Err("Burda could not be added to the game's select screen; see the log. She can still be picked here, " +
+                                              "but on the ship and in the Plaza she is only shown while your own cousin is the Prince.");
+            else if (SelectScreen.ScopeFailed) ImUi.Err("The select screen's marker hooks could not be made; see the log. Its current-cousin marker stays " +
+                                                        "on your own cousin, and on the ship and in the Plaza she is only shown while that cousin is the Prince.");
+            else if (Settings.Active && PrinceBase.Installed && PrinceBase.Count < PrinceBase.Expected)
+                ImUi.Err($"Only {PrinceBase.Count} of the {PrinceBase.Expected} hooks that build the Prince under her could be made; see the log.");
             if (Dresser.LastProblem != null) ImUi.Hint("Last model left as it was: " + Dresser.LastProblem);
         }
 
-        private static void Choose(string cousinId, string style)
+        /// <summary>
+        /// The tab's pick (also the test's): a cousin is recorded with the save's cousin now (taken later when no slot is
+        /// loaded); off takes her off and gives the game's run-time cousin id back. A style change keeps where she was picked.
+        /// </summary>
+        internal static void Choose(string cousinId, string style)
         {
             bool wasOn = Chosen.On;
-            // A style change keeps where she was picked: picked on the select screen and worn, she still needs the Prince in
-            // the save. Picked here while she is off for now, she is picked here: worn whatever cousin the save holds.
-            Settings.Choose(cousinId, style, onScreen: cousinId != null && Settings.OnScreen && Chosen.On && Settings.CousinId == cousinId);
+            if (cousinId == null)
+            {
+                if (Settings.Active) Chosen.TakeOff("turned off in the tab");
+                else Settings.Choose(null, style);
+            }
+            else
+            {
+                int saved = Settings.NotRecorded, custom = Settings.NotRecorded;
+                if (GameRefs.InGameSession && Chosen.Effective(out int id, out int c) && Chosen.IsStorableId(id)) { saved = id; custom = c; }
+                bool onScreen = Settings.OnScreen && Chosen.On && Settings.CousinId == cousinId;
+                Settings.Choose(cousinId, style, onScreen, saved, custom);
+            }
             Chosen.Refresh();
             if (Chosen.On && !wasOn) Contexts.LeaveCurrentOwnerAlone();
         }

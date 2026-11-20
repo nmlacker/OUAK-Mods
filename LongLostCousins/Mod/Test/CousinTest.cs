@@ -18,12 +18,19 @@ namespace LongLostCousins.Test
     /// The flag turns Burda on for this session only (settings.json is never written) and is deleted when read.
     /// Words in the flag: <c>style new</c> or <c>style old</c> (new by default), <c>slot N</c> (the last used slot by
     /// default), <c>stage</c> (also test a story stage), <c>results</c> (also end the stage and test the results),
-    /// <c>select</c> (start with Burda not chosen and pick her on the game's select screen on the ship, then the Prince).
+    /// <c>select</c> (start with Burda not chosen and pick her on the game's select screen on the ship, then the test's
+    /// cousin's own slot), <c>probe</c> (also run slice three's in-game probes and log them on [CousinProbe] lines:
+    /// CousinTest.Probe.cs), <c>cousin N</c> (the cousin the save holds for the run, 6 by default), <c>creator</c> (the
+    /// save holds the Cousin Creator's 999 with the custom index it already has), <c>forever</c> (use the Katamari
+    /// Forever folder already in settings.json and check the old style's Forever motions: CousinTest.Forever.cs; without
+    /// the word the folder is treated as unset).
     /// A backup of the saves is made before the slot is loaded, and every save write is blocked for the whole session.
+    /// Right after the slot is read, the save's cousin (and GlobalManager's run-time copy) is set to the test's cousin in
+    /// memory, so the Prince under her is a real change; the fields are put back and compared before DONE.
     /// Lines start with [CousinTest]; the last one is <c>DONE pass=N fail=M</c>. Pictures go to
     /// UserData/LongLostCousins/TestShots.
     /// </summary>
-    internal static class CousinTest
+    internal static partial class CousinTest
     {
         private static readonly ModLog Log = LongLostCousinsMod.Log.In("Test");
         private static string Shots => Path.Combine(Settings.Folder, "TestShots");
@@ -36,6 +43,13 @@ namespace LongLostCousins.Test
         private static int _slot = -1;
         private static bool _stage, _results, _select;
         private static int _pass, _fail;
+        // The save's cousin for the run (word "cousin N" or "creator"), and the fields as the slot had them.
+        private static int _testCousin = 6, _testCustom = int.MinValue;
+        private static bool _saveSet;
+        private static int _s0 = int.MinValue, _c0 = int.MinValue, _d0 = int.MinValue;
+        private static int[] _w0;
+        // The select run ended on the Prince (the test cousin's slot was not on the screen): the save then holds 0.
+        private static bool _selectStoredPrince;
         private static string _setupFailure;
         private static IEnumerator<object> _script;
         private static float _resume, _deadline;
@@ -79,6 +93,11 @@ namespace LongLostCousins.Test
             _results = w.Contains("results");
             _stage = _results || w.Contains("stage");
             _select = w.Contains("select");
+            _probe = w.Contains("probe");
+            _forever = w.Contains("forever");
+            i = w.IndexOf("cousin");
+            if (i >= 0 && i + 1 < w.Count && int.TryParse(w[i + 1], out int tc) && Chosen.IsStorableId(tc)) _testCousin = tc;
+            if (w.Contains("creator")) _testCousin = Chosen.CreatorId;
             _running = true;
             _script = Script().GetEnumerator();
 
@@ -95,12 +114,14 @@ namespace LongLostCousins.Test
             SaveGuard.Hold = true;
             Msg($"armed: {(_select ? "nobody chosen, " + Catalog.Find(Cousin)?.StyleLabel(_style) + " to be picked on the select screen" : Settings.Describe())}, " +
                 $"slot {(_slot < 0 ? "last used" : (_slot + 1).ToString())}, " +
-                $"{(_select ? "ship with the select screen" : "ship")}{(_results ? ", stage and results" : _stage ? " and stage" : " only")}; every save write blocked {guard}");
+                $"{(_select ? "ship with the select screen" : "ship")}{(_results ? ", stage and results" : _stage ? " and stage" : " only")}{(_probe ? ", with the probes" : "")}{(_forever ? ", with Katamari Forever's motions from the folder in settings.json" : ", without Katamari Forever's motions")}; " +
+                $"the save holds {(_testCousin == Chosen.CreatorId ? "the Cousin Creator's 999 (its own custom index)" : "cousin " + _testCousin)} in memory; every save write blocked {guard}");
             if (!guard)
             {
                 _setupFailure = "the save hooks are missing; not loading a slot";
                 Settings.ChooseInMemory(null, null);
             }
+            else if (_probe) ArmProbe();
             try { Directory.CreateDirectory(Shots); } catch { }
             return true;
         }
@@ -113,6 +134,7 @@ namespace LongLostCousins.Test
             try
             {
                 if (_deadline == 0f) _deadline = now + 1500f;
+                if (_probe) ProbeTick(now);
                 if (_setupFailure != null) { Check("the test could start", false, _setupFailure); Finish(); return; }
                 if (now > _deadline) { Check("the whole test finished within 25 minutes", false, $"scene {SceneLoader.ActiveScene}"); Finish(); return; }
                 if (_wait != null)
@@ -148,7 +170,16 @@ namespace LongLostCousins.Test
             _running = false;
             try
             {
-                Msg($"save writes blocked: {SaveGuard.Blocked}; models dressed this session: {Dresser.DressedCount}");
+                if (_probe) ProbeEnd();
+            }
+            catch { }
+            try { RestoreTestSave(); }
+            catch (Exception e) { Check("save: the save's fields in memory are put back", false, $"{e.GetType().Name}: {e.Message}"); }
+            try
+            {
+                Msg($"save writes blocked: {SaveGuard.Blocked}; models dressed this session: {Dresser.DressedCount}; " +
+                    $"Prince-base loader calls {PrinceBase.LoaderCalls}, getter reads turned to 0 {PrinceBase.Rewrites}, run-time id set to 0 {PrinceBase.NowIdZeroed}x, " +
+                    $"models undressed by a Plaza swap {PrinceBase.Undressed}, confirm write-backs {SelectScreen.WriteBacks}, net firings {SelectScreen.NetFirings}");
                 Msg($"DONE pass={_pass} fail={_fail}");
             }
             catch { }
@@ -164,15 +195,21 @@ namespace LongLostCousins.Test
             LoadSlot();
             yield return Until(() => SceneLoader.ActiveScene == "OujiShip" && GameRefs.InGameSession, 120f, "the Prince's Ship");
             Msg("on the ship");
+            if (_probe) ProbeBegin();
             yield return Until(() => Contexts.PlazaOwnerModel() != null, 60f, "the walking cousin on the ship");
             yield return 4f;
             if (_select) foreach (var x in SelectScreenTest()) yield return x;
             else
             {
-                // Picked in the tab, she is worn whatever cousin the save holds: say which one, for the log.
-                Msg($"the save holds cousin {Chosen.SavedCousin()}; worn now: {Chosen.On}");
+                // Chosen by the flag with nothing recorded: the first worn check records the save's cousin.
+                Msg($"the save holds {Chosen.Describe(RawSavedCousin(), GameRefs.Save?._customPlayerIndex ?? -1)}; worn now: {Chosen.On}; the settings record {Settings.DescribeRecord()}");
+                Check("ship: the settings record the save's cousin", Settings.HasRecord && Settings.Saved == _testCousin && Settings.Custom == _testCustom,
+                      $"recorded {Settings.DescribeRecord()} (custom index {Settings.Custom}), the test's {Chosen.Describe(_testCousin, _testCustom)}");
                 foreach (var x in Ship()) yield return x;
+                if (_forever) foreach (var x in Fenced("the Forever ship checks", ForeverChecks("ship", Dresser.FindFor(Contexts.PlazaOwnerModel())))) yield return x;
+                foreach (var x in OffAndOn()) yield return x;
             }
+            if (_probe) foreach (var x in Guarded("the ship probes", ShipProbes())) yield return x;
             if (_stage)
             {
                 if (_select)
@@ -205,6 +242,7 @@ namespace LongLostCousins.Test
             BackupManager.Create("Long Lost Cousins test", $"made before the Long Lost Cousins test loaded slot {slot + 1}");
             Msg($"loading slot {slot + 1} (like the title's continue)");
             ctrl.SelectLoadDataToGameData(slot);
+            SetTestSave();
             var save = GameRefs.Save;
             save.SetUseDataLogoMonoGetFlg();
             OujiShipSponePointList.s_SponeIndex = OujiShipSponePointList.ElevatorSpone;
@@ -212,6 +250,121 @@ namespace LongLostCousins.Test
             SingletonMonoBehaviour<EncorsSaveDataChecker>.Instance.CheckEncorsContentsData();
             GameRefs.Sound?.StopBGM(0.5f);
             Il2Cpp.SceneManager.LoadSceneAsync("OujiShip", LoadSceneMode.Single, true);
+        }
+
+        /// <summary>
+        /// Right after the slot is read: the start values are kept, and the save's cousin and GlobalManager's run-time id
+        /// become the test's cousin, in memory (every save write stays blocked).
+        /// </summary>
+        private static void SetTestSave()
+        {
+            var save = GameRefs.Save;
+            var g = GameRefs.Global;
+            if (save == null) { Msg("no save object after the slot was read; the save's cousin is left alone"); return; }
+            _s0 = save._selectPlayerId;
+            _c0 = save._customPlayerIndex;
+            _d0 = g != null ? g._nowCharacterID : int.MinValue;
+            _w0 = Wearing();
+            _testCustom = _c0;
+            save._selectPlayerId = _testCousin;
+            if (g != null) g._nowCharacterID = _testCousin;
+            _saveSet = true;
+            Msg($"the save in memory: _selectPlayerId {_s0} -> {_testCousin}, _customPlayerIndex {_c0} kept, GlobalManager._nowCharacterID {_d0} -> {_testCousin}, " +
+                $"_wearingPresent [{string.Join(", ", _w0)}]; put back before DONE");
+        }
+
+        /// <summary>From Finish: the save's fields go back to the slot's own values, and are compared with them.</summary>
+        private static void RestoreTestSave()
+        {
+            if (!_saveSet) return;
+            var save = GameRefs.Save;
+            var g = GameRefs.Global;
+            if (save == null) { Check("save: the save's fields in memory are put back", false, "no save object at the end"); return; }
+            CheckSaveKept("at the end of the run");
+            save._selectPlayerId = _s0;
+            save._customPlayerIndex = _c0;
+            if (g != null && _d0 != int.MinValue) g._nowCharacterID = _d0;
+            var w = Wearing();
+            bool same = save._selectPlayerId == _s0 && save._customPlayerIndex == _c0 && _w0 != null && w.SequenceEqual(_w0) &&
+                        (g == null || _d0 == int.MinValue || g._nowCharacterID == _d0);
+            Check("save: the save's fields in memory are back as the slot had them", same,
+                  $"_selectPlayerId {save._selectPlayerId} (start {_s0}), _customPlayerIndex {save._customPlayerIndex} (start {_c0}), " +
+                  $"_nowCharacterID {(g != null ? g._nowCharacterID : -1)} (start {_d0}), _wearingPresent [{string.Join(", ", w)}] (start [{string.Join(", ", _w0 ?? new int[0])}])");
+        }
+
+        /// <summary>The save still holds the test's cousin and its custom index: picking, wearing and dropping her changed nothing there.</summary>
+        private static void CheckSaveKept(string when)
+        {
+            var save = GameRefs.Save;
+            if (!_saveSet || save == null) { Check($"save: the test's cousin is still in the save {when}", false, "the test could not set it"); return; }
+            if (_selectStoredPrince) { Msg($"the save {when} holds {save._selectPlayerId}: the select run stored the Prince, so it is not compared with the test's cousin"); return; }
+            Check($"save: the save still holds {Chosen.Describe(_testCousin, _testCustom)} {when}", save._selectPlayerId == _testCousin && save._customPlayerIndex == _testCustom,
+                  $"_selectPlayerId {save._selectPlayerId}, _customPlayerIndex {save._customPlayerIndex}, _nowCharacterID {GameRefs.Global?._nowCharacterID}; " +
+                  $"confirm write-backs {SelectScreen.WriteBacks}, net firings {SelectScreen.NetFirings}");
+        }
+
+        /// <summary>The model under her is the Prince: OujiPresent._oujiID 0 and the Prince's prefab for this place (the model or one of its children).</summary>
+        private static void CheckBase(string what, GameObject go, string want)
+        {
+            int id = PresentId(go);
+            var names = new List<string>();
+            if (go != null)
+            {
+                names.Add(go.name);
+                var op = go.GetComponentInChildren<OujiPresent>(true);
+                if (op != null && op.gameObject.Pointer != go.Pointer) names.Add(op.gameObject.name);
+                for (int i = 0; i < go.transform.childCount && i < 8; i++) names.Add(go.transform.GetChild(i).name);
+            }
+            bool named = names.Any(n => n.StartsWith(want, StringComparison.Ordinal));
+            Check($"{what}: the hidden base is the Prince ({want}, OujiPresent._oujiID 0)", go != null && id == 0 && named,
+                  $"{(go != null ? U.PathOf(go.transform) : "no model")}, _oujiID {id}, names [{string.Join(", ", names)}]; save {RawSavedCousin()}, " +
+                  $"_nowCharacterID {GameRefs.Global?._nowCharacterID}; loader calls {PrinceBase.LoaderCalls}, getter reads turned to 0 {PrinceBase.Rewrites}, run-time id set to 0 {PrinceBase.NowIdZeroed}x");
+        }
+
+        /// <summary>
+        /// Every cousin model in the scene (each CharacterAnimation) that carries her, by the dresser's list or by her marker
+        /// in the model, sits under one of the player's own objects (the walking cousin, a UIOuji copy, the stage's player
+        /// or HUD copy, the ending's player, a results holder) and stands on the Prince. Read from the scene, not from the
+        /// dresser's contexts.
+        /// </summary>
+        private static void CheckOnlyPlayers(string where)
+        {
+            var players = new List<Transform>();
+            void Add(Component c) { if (c != null) players.Add(c.transform); }
+            var walker = Contexts.PlazaOwnerModel();
+            if (walker != null) players.Add(walker.transform);
+            try { foreach (var u in UnityEngine.Object.FindObjectsOfType<UIOuji>()) Add(u); } catch { }
+            var main = GameRefs.Main;
+            if (main != null) { Add(main.Ouji); Add(main.UIOuji); }
+            Add(GameRefs.Global?.EndGameMan?.Ouji);
+            try
+            {
+                foreach (var s in UnityEngine.Object.FindObjectsOfType<ResultMonoSetter>()) if (s.m_PlayCharacter != null) players.Add(s.m_PlayCharacter.transform);
+                foreach (var s in UnityEngine.Object.FindObjectsOfType<ResultAAMonoSetter>()) if (s.m_PlayCharacter != null) players.Add(s.m_PlayCharacter.transform);
+            }
+            catch { }
+            var bad = new List<string>();
+            int models = 0, hers = 0;
+            foreach (var ca in UnityEngine.Object.FindObjectsOfType<CharacterAnimation>())
+            {
+                if (ca == null) continue;
+                models++;
+                var go = ca.gameObject;
+                if (Dresser.Find(go) == null && !Dresser.CarriesMarker(go)) continue;
+                hers++;
+                var t = go.transform;
+                bool mine = players.Any(p => IsUnder(t, p));
+                int id = PresentId(go);
+                if (!mine || id != 0) bad.Add($"{U.PathOf(t)} (_oujiID {id}, under one of the player's objects {mine})");
+            }
+            Check($"{where}: she is only on the player's own models, each on the Prince", hers > 0 && bad.Count == 0,
+                  (bad.Count > 0 ? string.Join("; ", bad) + "; " : "") + $"{hers} of the {models} cousin model(s) in the scene carry her");
+        }
+
+        private static bool IsUnder(Transform t, Transform root)
+        {
+            for (int i = 0; t != null && i < 16; i++, t = t.parent) if (t.Pointer == root.Pointer) return true;
+            return false;
         }
 
         private static void Shot(string name)
@@ -239,6 +392,7 @@ namespace LongLostCousins.Test
             var dm = Dresser.FindFor(Contexts.PlazaOwnerModel());
             Check("ship: the walking cousin is dressed as " + Settings.Describe(), dm != null, dm != null ? U.PathOf(dm.Root.transform) : Why());
             if (dm != null) CheckModel("ship walking cousin", dm, true);
+            CheckBase("ship walking cousin", Contexts.PlazaOwnerModel(), "OujiPrefab_001");
 
             yield return Until(() => ByContext("Plaza UI") != null, 20f, "the ship's UI copy to be dressed", false);
             var ui = ByContext("Plaza UI");
@@ -247,10 +401,110 @@ namespace LongLostCousins.Test
             Check("ship: the UI copy of the walking cousin is dressed", ui != null,
                   (ui != null ? U.PathOf(ui.Root.transform) + ", " : Why() + ", ") + $"{uiObjects} active UIOuji object(s)");
             if (ui != null) CheckModel("ship UI copy", ui, false);
+            CheckBase("ship UI copy", ui != null ? ui.Root : FirstUiCopy(), "OujiPrefab_001");
+            CheckSaveKept("on the ship");
+            CheckOnlyPlayers("ship");
 
             Shot("ship_" + _style);
             yield return PictureTaken();
+
+            // Slice three, stage 3: the presents she wears, on the walker and its UI copy, and her antenna.
+            if (dm != null) foreach (var x in CheckPresents("ship walking cousin", dm, false)) yield return x;
+            if (ui != null && ui.Root != null) foreach (var x in CheckPresents("ship UI copy", ui, false)) yield return x;
+            Shot("present_ship_" + _style);
+            yield return PictureTaken();
+            if (dm != null && dm.Root != null) foreach (var x in AntennaFlip(dm)) yield return x;
             if (dm != null) foreach (var x in Faces(dm)) yield return x;
+        }
+
+        /// <summary>The first UIOuji in the scene (the ship's picture of the walking cousin), for a FAIL line when none is dressed.</summary>
+        private static GameObject FirstUiCopy()
+        {
+            try
+            {
+                var all = UnityEngine.Object.FindObjectsOfType<UIOuji>();
+                return all.Length > 0 ? all[0].gameObject : null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// The tab run's off and on: the tab turns her off (the save and the run-time id keep the test's cousin), a ship
+        /// rebuild builds that cousin again, undressed; the tab turns her on, and a rebuild builds the Prince under her.
+        /// </summary>
+        private static IEnumerable<object> OffAndOn()
+        {
+            Msg("turning her off in the tab (CousinsTab.Choose(null))");
+            CousinsTab.Choose(null, null);
+            Check("off: the tab turns her off", !Settings.Active && !Chosen.On, $"settings {Settings.Describe()}, worn {Chosen.On}");
+            CheckSaveKept("after turning her off");
+            yield return 0.2f;   // a LateUpdate: the run-time id is put back there if the mod had set it to 0
+            var g = GameRefs.Global;
+            Check("off: GlobalManager's run-time cousin id is the save's cousin", g != null && g._nowCharacterID == _testCousin,
+                  $"_nowCharacterID {(g != null ? g._nowCharacterID : -1)}, the run-time id still the mod's 0 {PrinceBase.Zeroed}");
+            bool rebuilt = false;
+            foreach (var x in DirectRebuild("with her off", 0, ok => rebuilt = ok)) yield return x;
+            yield return 2f;
+            CheckOwnCousin("off: the rebuilt walking cousin", Contexts.PlazaOwnerModel(), rebuilt);
+            CheckSaveKept("after the rebuild with her off");
+            Shot("off_" + _style);
+            yield return PictureTaken();
+
+            Msg("turning her on again in the tab (CousinsTab.Choose)");
+            CousinsTab.Choose(Cousin, _style);
+            Check("on again: she is worn, with the save's cousin recorded", Chosen.On && Settings.HasRecord && Settings.Saved == _testCousin,
+                  $"worn {Chosen.On}, recorded {Settings.DescribeRecord()}");
+            yield return 0.2f;
+            foreach (var x in DirectRebuild("with her on again", _testCousin != 0 ? 1 : 0, ok => rebuilt = ok)) yield return x;
+            yield return Until(() => Dresser.FindFor(Contexts.PlazaOwnerModel()) != null, 20f, "the rebuilt walking cousin to be dressed", false);
+            var walker = Contexts.PlazaOwnerModel();
+            Check("on again: the rebuilt walking cousin is dressed", rebuilt && Dresser.FindFor(walker) != null, rebuilt ? Why() : "the ship did not rebuild it");
+            CheckBase("on again: ship walking cousin", walker, "OujiPrefab_001");
+            CheckSaveKept("after turning her on again");
+            CheckOnlyPlayers("on again");
+        }
+
+        /// <summary>[direct] A ship rebuild of the walking cousin by OrderToChangeCharacter.OrderActiveEvent, what the ship does after a cousin change.</summary>
+        private static IEnumerable<object> DirectRebuild(string why, int wantRewrites, Action<bool> done)
+        {
+            IntPtr before = WalkerPtr();
+            int calls = PrinceBase.LoaderCalls, rewrites = PrinceBase.LoaderRewrites;
+            var etm = UnityEngine.Object.FindObjectOfType<EventToMenuController>();
+            var och = etm != null ? etm.m_OrderChangeChara : null;
+            if (och == null) och = UnityEngine.Object.FindObjectOfType<OrderToChangeCharacter>();
+            if (och == null) { Check($"ship rebuild {why}: the ship has an OrderToChangeCharacter", false); done(false); yield break; }
+            Msg($"[direct] ship rebuild {why}: OrderToChangeCharacter.OrderActiveEvent(); save {RawSavedCousin()}, _nowCharacterID {GameRefs.Global?._nowCharacterID}");
+            och.OrderActiveEvent();
+            yield return Until(() => WalkerPtr() != IntPtr.Zero && WalkerPtr() != before, 60f, "the ship to rebuild the walking cousin " + why, false);
+            bool ok = WalkerPtr() != IntPtr.Zero && WalkerPtr() != before;
+            CheckLoaderRewrites($"ship rebuild {why}", wantRewrites, calls, rewrites);
+            done(ok);
+        }
+
+        /// <summary>
+        /// The getter answered 0 inside the model loader exactly <paramref name="want"/> times since the counts were taken
+        /// (one read per loader call on the ship, so 1 for a rebuild with her worn and 0 with her off).
+        /// </summary>
+        private static void CheckLoaderRewrites(string what, int want, int callsBefore, int rewritesBefore)
+        {
+            int calls = PrinceBase.LoaderCalls - callsBefore, rewrites = PrinceBase.LoaderRewrites - rewritesBefore;
+            Check($"{what}: the saved cousin read as the Prince inside the loader {want}x", rewrites == want,
+                  $"{rewrites} read(s) turned to 0 in {calls} loader call(s) (Prince-base hooks in {PrinceBase.Installed}, {PrinceBase.Count} of {PrinceBase.Expected}); " +
+                  $"OujiPresent.Start reads turned to 0 this session {PrinceBase.PresentRewrites}");
+        }
+
+        /// <summary>The walking cousin is the test's cousin itself (its OujiPresent id, or a ModelSetup for the Cousin Creator's 999), not dressed.</summary>
+        private static void CheckOwnCousin(string what, GameObject walker, bool rebuilt)
+        {
+            string address;
+            try { address = Il2CppApp.KatamariSin.Game.GetItokoPrefabAddressFromID(_testCousin) ?? "null"; }
+            catch (Exception e) { address = "unreadable: " + e.Message; }
+            Msg($"[direct] Game.GetItokoPrefabAddressFromID({_testCousin}) = {address}");
+            int id = PresentId(walker);
+            bool setup = walker != null && walker.GetComponentInChildren<ModelSetup>(true) != null;
+            bool own = _testCousin == Chosen.CreatorId ? setup : id == _testCousin;
+            Check($"{what} is {Chosen.Describe(_testCousin, _testCustom)} again, not dressed", rebuilt && walker != null && own && Dresser.FindFor(walker) == null && !Dresser.CarriesMarker(walker),
+                  !rebuilt ? "the ship did not rebuild it" : $"{(walker != null ? walker.name : "no model")}, _oujiID {id}, ModelSetup {setup}, dressed {Dresser.FindFor(walker) != null}, marker {Dresser.CarriesMarker(walker)}");
         }
 
         /// <summary>The checks every dressed model gets: the game hidden, her shown, bones and layer in step.</summary>
@@ -258,18 +512,24 @@ namespace LongLostCousins.Test
         {
             var all = dm.Root.GetComponentsInChildren<Renderer>(true);
             var on = new List<string>();
-            int game = 0;
+            int game = 0, worn = 0;
             for (int i = 0; i < all.Length; i++)
             {
                 var r = all[i];
                 if (r is null || dm.Own.Contains(r.Pointer)) continue;
+                // A present she wears (under one of her attach nodes) is hers to show; CheckPresents checks those.
+                if (Presents.IsWorn(dm, r)) { worn++; continue; }
                 game++;
                 if (r.enabled) on.Add(r.name);
             }
             Check($"{name}: none of the game's renderers is on", on.Count == 0,
-                  on.Count == 0 ? $"{game} game renderer(s), all off" : $"{on.Count} of {game} on: {string.Join(", ", on.Take(8))}");
+                  (on.Count == 0 ? $"{game} game renderer(s), all off" : $"{on.Count} of {game} on: {string.Join(", ", on.Take(8))}") +
+                  $"; {worn} renderer(s) of presents she wears left out");
 
-            var body = dm.Pieces.Where(p => p.Role == MeshRole.Body).ToList();
+            // Her antenna follows the game's antenna object (a hat may hide it), so it counts only while the game's is on.
+            var gameAntenna = dm.Op != null ? dm.Op._antennaObject : null;
+            bool antennaOff = dm.Antenna != null && gameAntenna != null && !gameAntenna.activeSelf;
+            var body = dm.Pieces.Where(p => p.Role == MeshRole.Body && !(antennaOff && p == dm.Antenna)).ToList();
             // A UI copy may sit inactive while no menu shows it: then only her renderers' own switch is hers to set.
             bool rootActive = dm.Root.activeInHierarchy;
             int bodyOn = body.Count(p => p.Renderer.enabled && (!rootActive || p.Go.activeInHierarchy));
@@ -281,6 +541,15 @@ namespace LongLostCousins.Test
             else Msg($"{name}: {seen} of her {shown} shown renderers drawn by a camera now");
 
             var data = dm.Data;
+            if (dm.Clip != null)
+            {
+                // Katamari Forever's clip plays on this state (word forever): her joints follow the bake, not the game's.
+                Msg($"{name}: on a Forever state ({StateOf(dm)}): her joints are checked against the bake instead of the game's");
+                CheckBakeMatch(name, dm);
+                int lw = dm.LayerSource != null ? dm.LayerSource.layer : dm.Model.gameObject.layer;
+                Msg($"{name}: layer {lw} (body_m's), {dm.Pieces.Count(p => p.Go.layer != lw) + (dm.Marker.gameObject.layer != lw ? 1 : 0)} of her object(s) on another");
+                return;
+            }
             int w = dm.Assets.FollowJoint >= 0 ? dm.Assets.FollowJoint : data.JointIndex("JNT_waist");
             if (w < 0 || dm.GameJoints[w] == null || dm.GameJoints[w].parent == null)
                 Check($"{name}: her waist follows the game's waist", false, "no waist joint to compare");
@@ -290,6 +559,10 @@ namespace LongLostCousins.Test
                 var h = dm.HerJoints[w];
                 var offset = w == dm.Assets.FollowJoint ? dm.Assets.FollowOffset : U.V3(0f, 0f, 0f);
                 var expected = g.parent.TransformPoint(U.Add(g.localPosition, offset));
+                // The stage HUD copy scales and moves her marker (cousins.json "hud_scale"/"hud_offset"): there her waist
+                // stands where the game's would stand under the marker's scale and offset.
+                if (dm.Marker.localScale.x != 1f || U.Length(dm.Marker.localPosition) > 0f)
+                    expected = dm.Marker.TransformPoint(dm.Model.InverseTransformPoint(expected));
                 float cm = Math.Abs(dm.Model.lossyScale.y);
                 if (cm <= 0f) cm = 1f;
                 float off = U.Length(U.Sub(h.position, expected)) / cm;
@@ -369,8 +642,16 @@ namespace LongLostCousins.Test
             var grp = groups[g];
             if (data.Cards)
             {
+                // On a Forever state whose own face group is g, Forever's expression picks the card (word forever only).
+                int card = grp.Card;
+                string why = "";
+                if (dm.Clip != null && (dm.RowFace == ForeverPlayer.NoRowFace || dm.RowFace == g))
+                {
+                    card = DressedModel.ExpressionCard(data.Face, dm.Clip.Expression);
+                    why = $" (Forever's expression {dm.Clip.Expression} on {StateOf(dm)}, whose own group is {g})";
+                }
                 var on = dm.Pieces.Where(p => p.Role == MeshRole.Card && p.Renderer.enabled && p.Go.activeInHierarchy).Select(p => p.Card).ToList();
-                Check($"face {g}: card {grp.Card} shows, and no other card", on.Count == 1 && on[0] == grp.Card,
+                Check($"face {g}: card {card} shows, and no other card{why}", on.Count == 1 && on[0] == card,
                       "shown: " + (on.Count == 0 ? "none" : string.Join(", ", on)));
                 return;
             }
@@ -435,12 +716,12 @@ namespace LongLostCousins.Test
         }
 
         /// <summary>After a confirm: the counters are back to zero and the net never fired.</summary>
-        private static void CheckAfterConfirm(string who)
+        private static void CheckAfterConfirm(string who, int want)
         {
             var g = GameRefs.Global;
             int now = g != null ? g._nowCharacterID : -1;
-            // Both confirms in this test store the Prince.
-            Check($"select: GlobalManager's current cousin is the Prince (0) after {who}", now == 0,
+            // SetCharater sets the run-time id from the save, which keeps the player's own cousin.
+            Check($"select: GlobalManager's current cousin is {want} after {who}", now == want,
                   $"_nowCharacterID {now}, _selectPlayerId {RawSavedCousin()}");
             var save = GameRefs.Save;
             int plain = save != null ? save.GetSelectPlayerId : -1;
@@ -491,23 +772,26 @@ namespace LongLostCousins.Test
             // ---- confirm her, as the dialog's yes does
             IntPtr before = WalkerPtr();
             if (!Confirm(menu, SelectScreen.Page, SelectScreen.Slot, SelectScreen.ModId, "Burda")) yield break;
-            Check("select: the save still holds the Prince", RawSavedCousin() == 0 && Chosen.SavedCousin() == 0,
-                  $"_selectPlayerId {RawSavedCousin()}, GetSelectPlayerId {Chosen.SavedCousin()}, GlobalManager._nowCharacterID {GameRefs.Global?._nowCharacterID}");
+            CheckSaveKept("after confirming her");
+            Check("select: the settings record the save's cousin", Settings.HasRecord && Settings.Saved == _testCousin && Settings.Custom == _testCustom,
+                  $"recorded {Settings.DescribeRecord()} (custom index {Settings.Custom}); GetSelectPlayerId {Chosen.SavedCousin()}, confirm write-backs {SelectScreen.WriteBacks}");
             Check("select: the settings say Burda, picked on the screen", Settings.Active && Settings.CousinId == Cousin && Settings.OnScreen && Settings.Style == _style,
                   $"{Settings.Describe()}, on the screen {Settings.OnScreen}");
             Msg($"settings kept in memory only (set up by the test): {Settings.MemoryOnly}");
             Check("select: she is worn and the dressing hooks are in place", Chosen.On && Hooks.Installed && Hooks.Count == Hooks.Expected,
                   $"worn {Chosen.On}, {Hooks.Count} of {Hooks.Expected} hooks");
             Check("select: her slot carries 100 again", slot != null && (int)slot._ITOKONAME == SelectScreen.ModId, slot != null ? "id " + (int)slot._ITOKONAME : "no slot");
-            CheckAfterConfirm("the confirm of Burda");
+            CheckAfterConfirm("the confirm of Burda", _testCousin);
             yield return 0.2f;   // a LateUpdate: the marker hooks follow the settings there
             Check("select: the marker hooks come in once the settings name her", SelectScreen.ScopeInstalled,
                   SelectScreen.ScopeInstalled ? "in" : SelectScreen.ScopeFailed ? "they could not be made (see the log)" : "not in");
 
             // ---- the ship's new walking cousin, after the game's swap
             _changeDirect = false;
+            int calls0 = PrinceBase.LoaderCalls, rewrites0 = PrinceBase.LoaderRewrites;
             foreach (var x in AwaitRebuild(before, "the confirm")) yield return x;
             Check("select: the game rebuilt the walking cousin", WalkerPtr() != IntPtr.Zero && WalkerPtr() != before, RebuildHint());
+            CheckLoaderRewrites("select: the rebuild after her confirm", _testCousin != 0 ? 1 : 0, calls0, rewrites0);
             yield return 3f;
             foreach (var x in Ship()) yield return x;
 
@@ -526,12 +810,16 @@ namespace LongLostCousins.Test
                 wins[0].SetIcon();
                 wins[SelectScreen.Page].SetIcon();
             }
-            var marks = wins[SelectScreen.Page]._selectIcon;
-            bool marked = marks != null && SelectScreen.Slot < marks.Length && marks[SelectScreen.Slot] != null && marks[SelectScreen.Slot].activeSelf;
-            var princeMarks = wins[0]._selectIcon;
-            bool princeMarked = princeMarks != null && princeMarks.Length > 0 && princeMarks[0] != null && princeMarks[0].activeSelf;
-            Check("select: the current-cousin marker sits on her slot, not the Prince's", marked && !princeMarked,
-                  $"hers {marked}, the Prince's {princeMarked}, marker hooks {SelectScreen.ScopeInstalled}, screen reset by the game {!_reopened}");
+            bool found = FindSlot(menu, _testCousin, out int ownPage, out int ownIndex);
+            if (_reopened && found && ownPage != 0 && ownPage != SelectScreen.Page)
+            {
+                Msg($"[direct] refreshing the current-cousin markers: IconWindowController.SetIcon on page {ownPage + 1} too");
+                wins[ownPage].SetIcon();
+            }
+            bool marked = Marked(menu, SelectScreen.Page, SelectScreen.Slot);
+            bool ownMarked = found && Marked(menu, ownPage, ownIndex);
+            Check($"select: the current-cousin marker sits on her slot, not on {Chosen.Describe(_testCousin, _testCustom)}'s", marked && !ownMarked,
+                  $"hers {marked}, the save's cousin's {(found ? ownMarked.ToString() : "(no slot on the screen)")}, marker hooks {SelectScreen.ScopeInstalled}, screen reset by the game {!_reopened}");
             LogSlotTree("her slot, reopened", slot);
 
             // ---- the scope and its suspension, on the save as it is now (the Prince, with her worn)
@@ -544,30 +832,84 @@ namespace LongLostCousins.Test
                 using (SelectScreen.Suspended()) suspended = save != null ? save.GetSelectPlayerId : -1;
             }
             finally { SelectScreen.LeaveScope(null); }
-            Check("select: inside the menu's scope the saved Prince reads as her id, and as the Prince when suspended", inScope == SelectScreen.ModId && suspended == 0,
+            Check("select: inside the menu's scope the save's cousin reads as her id, and as itself when suspended", inScope == SelectScreen.ModId && suspended == _testCousin,
                   $"in the scope {inScope}, suspended {suspended}, depth after {SelectScreen.ScopeDepth}");
 
-            Msg("to page 1, slot 1 (the Prince)");
-            FocusSlot(menu, 0, 0);
+            // Off: the save's own cousin picked again (the save then still holds it); the Prince when it has no slot here.
+            bool ownPickable = found && Slot(menu, ownPage, ownIndex)?._oujiData != null && Slot(menu, ownPage, ownIndex)._oujiData._isReleased;
+            int offPage = ownPickable ? ownPage : 0, offIndex = ownPickable ? ownIndex : 0, offId = ownPickable ? _testCousin : 0;
+            string offWho = ownPickable ? Chosen.Describe(_testCousin, _testCustom) : "the Prince";
+            if (!ownPickable)
+            {
+                _selectStoredPrince = true;
+                Msg($"{Chosen.Describe(_testCousin, _testCustom)} has no found slot on this screen (slot found {found}); turning her off with the Prince instead, so the save then holds 0");
+            }
+            Msg($"to page {offPage + 1}, slot {offIndex + 1} ({offWho})");
+            FocusSlot(menu, offPage, offIndex);
             yield return 1f;
-            if (!Confirm(menu, 0, 0, 0, "the Prince")) yield break;
-            Check("select: the Prince turns her off", !Settings.Active && !Chosen.On && !Hooks.Installed,
+            if (!Confirm(menu, offPage, offIndex, offId, offWho)) yield break;
+            Check($"select: {offWho} turns her off", !Settings.Active && !Chosen.On && !Hooks.Installed,
                   $"settings {Settings.Describe()}, worn {Chosen.On}, dressing hooks {Hooks.Installed}");
-            // The Prince's id is 0, so the save holding 0 here is information, not a check.
-            Msg("the save after the Prince: _selectPlayerId " + RawSavedCousin());
-            CheckAfterConfirm("the confirm of the Prince");
+            if (ownPickable) CheckSaveKept("after turning her off");
+            else
+            {
+                var sv = GameRefs.Save;
+                Msg("the save after the Prince: _selectPlayerId " + RawSavedCousin());
+                Check("select: the Prince's confirm left the custom index alone", sv != null && sv._customPlayerIndex == _testCustom,
+                      $"_customPlayerIndex {(sv != null ? sv._customPlayerIndex : -1)}, the test's {_testCustom}");
+            }
+            CheckAfterConfirm("the confirm of " + offWho, offId);
             yield return 0.2f;
             Check("select: the marker hooks go once the settings name nobody", !SelectScreen.ScopeInstalled);
             _changeDirect = false;
-            foreach (var x in AwaitRebuild(before, "the Prince")) yield return x;
+            calls0 = PrinceBase.LoaderCalls;
+            rewrites0 = PrinceBase.LoaderRewrites;
+            foreach (var x in AwaitRebuild(before, offWho)) yield return x;
+            CheckLoaderRewrites("select: the rebuild after " + offWho, 0, calls0, rewrites0);
             yield return 3f;
             var plain = Contexts.PlazaOwnerModel();
             bool rebuilt = plain != null && plain.Pointer != before;
-            Check("select: the rebuilt walking cousin is the game's own", rebuilt && Dresser.FindFor(plain) == null && !Dresser.CarriesMarker(plain),
-                  !rebuilt ? "the game did not rebuild it; " + RebuildHint() : $"dressed {Dresser.FindFor(plain) != null}, marker {Dresser.CarriesMarker(plain)}");
+            if (ownPickable) CheckOwnCousin("select: the rebuilt walking cousin", plain, rebuilt);
+            else Check("select: the rebuilt walking cousin is the game's own", rebuilt && Dresser.FindFor(plain) == null && !Dresser.CarriesMarker(plain),
+                       !rebuilt ? "the game did not rebuild it; " + RebuildHint() : $"dressed {Dresser.FindFor(plain) != null}, marker {Dresser.CarriesMarker(plain)}");
             Check("select: the net never fired (whole run)", SelectScreen.NetFirings == 0, $"{SelectScreen.NetFirings} firing(s)");
-            Shot("select_prince_" + _style);
+            Shot("select_off_" + _style);
             yield return PictureTaken();
+            if (_selectStoredPrince)
+            {
+                // The rest of the run (the stage, the end) is about the test's cousin: it goes back into the save in memory.
+                var sv = GameRefs.Save;
+                var g = GameRefs.Global;
+                if (sv != null) sv._selectPlayerId = _testCousin;
+                if (g != null) g._nowCharacterID = _testCousin;
+                _selectStoredPrince = false;
+                Msg($"the save in memory: _selectPlayerId back to the test's {_testCousin} (and GlobalManager._nowCharacterID) after the Prince's confirm");
+            }
+        }
+
+        /// <summary>The page and slot whose id is <paramref name="id"/> on this menu (her page left out), or false.</summary>
+        private static bool FindSlot(SelectionMenuController menu, int id, out int page, out int index)
+        {
+            page = index = -1;
+            var wins = menu != null ? menu._iconWindowControllers : null;
+            if (wins == null) return false;
+            for (int p = 0; p < wins.Length; p++)
+            {
+                var slots = wins[p] != null ? wins[p]._shortcutIconDatas : null;
+                if (slots == null) continue;
+                for (int i = 0; i < slots.Length; i++)
+                    if (slots[i] != null && (int)slots[i]._ITOKONAME == id && !(p == SelectScreen.Page && i == SelectScreen.Slot)) { page = p; index = i; return true; }
+            }
+            return false;
+        }
+
+        /// <summary>The current-cousin marker of window <paramref name="page"/>, slot <paramref name="index"/> is on.</summary>
+        private static bool Marked(SelectionMenuController menu, int page, int index)
+        {
+            var wins = menu._iconWindowControllers;
+            if (wins == null || page < 0 || page >= wins.Length || wins[page] == null) return false;
+            var marks = wins[page]._selectIcon;
+            return marks != null && index >= 0 && index < marks.Length && marks[index] != null && marks[index].activeSelf;
         }
 
         /// <summary>Slot <paramref name="index"/> of window <paramref name="page"/>, or null.</summary>
@@ -777,11 +1119,12 @@ namespace LongLostCousins.Test
 
         // ---------------------------------------------------------------- a story stage and its results
 
-        private static IEnumerable<object> Stage()
+        /// <summary>
+        /// After a stage load: waits for the player, skips the tips, the fly-over and the King's talk, and waits until the
+        /// stage plays, then 2 s more. <paramref name="done"/> gets false (after a FAIL) when it does not start within 150 s.
+        /// </summary>
+        private static IEnumerable<object> UntilPlaying(Action<bool> done)
         {
-            var entry = StageCatalog.Entries.FirstOrDefault(s => s.Kind == MapKind.Stage && s.Internal == "Stage_Big1");
-            if (entry == null) { Check("stage: Stage_Big1 is in the API's stage list", false); yield break; }
-            Msg("load stage: " + SceneLoader.LoadStage(entry));
             yield return Until(() => GameRefs.Main != null && GameRefs.Main.PlayerInitiated, 180f, "the stage's player");
 
             float t0 = Time.unscaledTime;
@@ -789,7 +1132,7 @@ namespace LongLostCousins.Test
             while (true)
             {
                 float since = Time.unscaledTime - t0;
-                if (since > 150f) { Check("stage: the stage starts playing", false, $"scene {SceneLoader.ActiveScene}"); yield break; }
+                if (since > 150f) { Check("stage: the stage starts playing", false, $"scene {SceneLoader.ActiveScene}"); done(false); yield break; }
                 var gm = GameRefs.Main;
                 if (gm == null) { yield return 0.25f; continue; }
                 if (gm.MainUI != null && gm.MainUI.IsTipsActive()) { gm.MainUI.DeactivateTipsUI(); yield return 1f; continue; }
@@ -804,6 +1147,18 @@ namespace LongLostCousins.Test
             }
             Msg("the stage is playing");
             yield return 2f;
+            done(true);
+        }
+
+        private static IEnumerable<object> Stage()
+        {
+            var entry = StageCatalog.Entries.FirstOrDefault(s => s.Kind == MapKind.Stage && s.Internal == "Stage_Big1");
+            if (entry == null) { Check("stage: Stage_Big1 is in the API's stage list", false); yield break; }
+            Msg("load stage: " + SceneLoader.LoadStage(entry));
+            if (_probe) ProbeAfterLoadStage("first");
+            bool playing = false;
+            foreach (var x in UntilPlaying(ok => playing = ok)) yield return x;
+            if (!playing) yield break;
 
             var main = GameRefs.Main;
             var ouji = main.Ouji;
@@ -823,8 +1178,33 @@ namespace LongLostCousins.Test
             var hd = hud != null ? Dresser.FindFor(hud.gameObject) : null;
             Check("stage: the HUD copy is dressed", hd != null, hd != null ? U.PathOf(hd.Root.transform) : (hud == null ? "MainGameManager.UIOuji is null" : Why()));
             if (hd != null) CheckModel("stage HUD copy", hd, false);
+            CheckBase("stage player", ouji != null ? ouji.gameObject : null, "OUJI01_D");
+            CheckBase("stage HUD copy", hud != null ? hud.gameObject : null, "OUJI01_D");
+            CheckSaveKept("after the stage load");
+            CheckOnlyPlayers("stage");
             Shot("stage_" + _style);
             yield return PictureTaken();
+            if (_forever)
+            {
+                foreach (var x in Fenced("the Forever stage checks", ForeverChecks("stage", dm))) yield return x;
+                // The HUD copy plays its own Animator (one frame behind the player): checked when it is on a Forever state.
+                if (_style == "old" && hd != null && hd.Root != null)
+                {
+                    yield return Until(() => hd.Root == null || hd.Clip != null, 5f, "the stage HUD copy on a Forever state", false);
+                    if (hd.Root != null && hd.Clip != null) CheckBakeMatch("forever stage HUD copy, state " + StateOf(hd), hd);
+                }
+            }
+
+            // Slice three, stages 3 and 4: the presents on the player (with the fade list) and on the HUD copy, and the HUD's framing.
+            if (dm != null) foreach (var x in CheckPresents("stage player", dm, true)) yield return x;
+            if (hd != null && hd.Root != null) foreach (var x in CheckPresents("stage HUD copy", hd, false)) yield return x;
+            Shot("present_stage_" + _style);
+            yield return PictureTaken();
+            if (hd != null && hd.Root != null)
+            {
+                CheckHud(main, hd);
+                foreach (var x in HudPictures(main, hd)) yield return x;
+            }
 
             if (dm != null)
             {
@@ -837,7 +1217,10 @@ namespace LongLostCousins.Test
                 CheckAlpha(dm, bodyRenderer, "SetAlpha(1)", 1f);
             }
 
+            if (_probe) foreach (var x in Guarded("the stage probes", StageProbes())) yield return x;
             if (_results) foreach (var x in Results()) yield return x;
+            // Last, because it loads the stage again: the HUD picture with the worn HEAD present at 0 in memory (not after the results).
+            if (_probe && !_results) foreach (var x in Guarded("the HEAD-at-0 stage", HeadlessStage(entry))) yield return x;
         }
 
         private static float AlphaOf(Renderer r)

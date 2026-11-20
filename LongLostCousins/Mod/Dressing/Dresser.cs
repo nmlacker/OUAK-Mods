@@ -16,6 +16,8 @@ namespace LongLostCousins.Dressing
     /// her bones (<c>llc_JNT_*</c>), her body and her extra face pieces; new-style face pieces go under the game's own face
     /// slot objects so the game's face switching (blink included) shows and hides them. A model that already carries a
     /// marker is a copy of a dressed model: it is re-bound, never built twice.</para>
+    /// <para>The player's presents go on her joints (<see cref="Presents"/>); in the stage HUD's copy her marker takes the
+    /// style's HUD scale.</para>
     /// </summary>
     internal static class Dresser
     {
@@ -78,6 +80,11 @@ namespace LongLostCousins.Dressing
                 var marker = MarkerOf(model);
                 if (marker != null) return Rebind(modelRoot, model, marker, context);
                 if (!Chosen.Now) return null;
+                // Her hidden base is always the Prince (PrinceBase steers the loads): any other cousin here was built by a
+                // load the mod does not steer, and she is not put on it.
+                var op = modelRoot.GetComponentInChildren<OujiPresent>(true);
+                if (op == null) return Soft(context, modelRoot, "it has no OujiPresent to tell which cousin it is");
+                if (op._oujiID != 0) return Soft(context, modelRoot, $"it is cousin {op._oujiID}, not the Prince she is built over (a load the mod does not steer)");
                 var assets = CousinAssets.Get(Settings.Cousin, Settings.Style);
                 if (assets == null) return Soft(context, modelRoot, $"{Settings.Describe()} can't be read (see the log)");
                 return Build(modelRoot, model, assets, context);
@@ -268,17 +275,66 @@ namespace LongLostCousins.Dressing
             }
 
             dm.LastLayer = layer;
+            if (context == HudContext) FitHud(dm);
+            AfterBuild(dm, modelRoot);
+            ForeverPlayer.Attach(dm);
             int hidden = dm.HideGame();
-            dm.Follow();
+            Pose(dm);
             dm.ApplyFace(true);
+            dm.FollowAntenna();
             dm.NextHide = Time.unscaledTime + 0.5f;
             Models.Add(dm);
             DressedCount++;
             Log.Info($"dressed {U.PathOf(modelRoot.transform)} as {assets.Label} for the {context}: {dm.Pieces.Count} renderers " +
                      $"({underSlots} under the game's face slots{(withoutSlot > 0 ? $", {withoutSlot} without a slot to follow" : "")}), " +
-                     $"{materials.Count} materials, {hidden} game renderers off, layer {layer}{(face == null ? ", no face component" : "")}");
+                     $"{materials.Count} materials, {hidden} game renderers off, layer {layer}{(face == null ? ", no face component" : "")}; " +
+                     PresentsText(dm));
+            if (Test.CousinTest.Probing) Test.CousinTest.ProbeDressed(dm);
             return dm;
         }
+
+        /// <summary>The stage HUD's context name (Contexts.StageHud): her marker there takes the style's HUD scale and offset.</summary>
+        public const string HudContext = "stage HUD";
+
+        /// <summary>
+        /// The stage HUD copy only: her marker takes the style's hud_scale and hud_offset (cousins.json "fit"), so she fits
+        /// the corner the way the Prince does. Scaled about her feet (the marker sits at the model's origin).
+        /// </summary>
+        private static void FitHud(DressedModel dm)
+        {
+            var fit = dm.Assets.Fit;
+            float s = fit.HudScale;
+            var o = fit.HudOffset;
+            if (Math.Abs(s - 1f) < 0.0001f && o[0] == 0f && o[1] == 0f && o[2] == 0f) return;
+            dm.Marker.localScale = U.V3(s, s, s);
+            dm.Marker.localPosition = U.V3(o[0], o[1], o[2]);
+            dm.HudScale = s;
+        }
+
+        /// <summary>Her antenna piece and the player's presents, at dressing (before the first hide pass, so presents she takes are never switched off).</summary>
+        private static void AfterBuild(DressedModel dm, GameObject modelRoot)
+        {
+            dm.Op = modelRoot.GetComponentInChildren<OujiPresent>(true);
+            if (dm.Assets.AntennaMesh >= 0)
+                foreach (var p in dm.Pieces)
+                    if (p.Mesh == dm.Assets.AntennaMesh && !p.Extra) { dm.Antenna = p; break; }
+            TakePresents(dm);
+        }
+
+        private static void TakePresents(DressedModel dm)
+        {
+            try { Presents.Take(dm); dm.PresentErrors = 0; }
+            catch (Exception e)
+            {
+                if (!dm.PresentsFailed) { dm.PresentsFailed = true; Log.Warn($"{dm.Label}: putting the presents on her failed: {e.GetType().Name}: {e.Message}"); }
+                // Presents alone: after 10 failures in a row they are left to the game's joints (and the hide pass).
+                if (++dm.PresentErrors >= 10) { Presents.GiveBack(dm); dm.Op = null; Log.Warn($"{dm.Label}: presents left to the game after 10 failures in a row"); }
+            }
+        }
+
+        private static string PresentsText(DressedModel dm) =>
+            dm.Op == null ? "no OujiPresent (no presents)" :
+            $"{dm.PresentEntries} present entries on her nodes, {dm.PresentsMoved} present object(s) moved onto them{(dm.HudScale != 1f ? $", HUD scale {U.F(dm.HudScale)}" : "")}";
 
         private static void Place(Transform t, Transform parent, Vector3 pos, Quaternion rot)
         {
@@ -388,18 +444,60 @@ namespace LongLostCousins.Dressing
                 dm.Pieces.Add(p);
                 dm.Own.Add(smr.Pointer);
             }
+            // A copy keeps the marker's scale it was made with (a copy of the HUD copy keeps the HUD's).
+            dm.HudScale = marker.localScale.x;
+            AfterBuild(dm, modelRoot);
+            ForeverPlayer.Attach(dm);
+            // A copy may carry a Forever pose: an OUAK state first puts her rest positions back.
+            dm.ForeverOn = dm.Anim != null;
             dm.HideGame();
-            dm.Follow();
+            Pose(dm);
             dm.ApplyFace(true);
             dm.FollowLayer();
+            dm.FollowAntenna();
             dm.NextHide = Time.unscaledTime + 0.5f;
             Models.Add(dm);
             DressedCount++;
-            Log.Info($"re-bound {U.PathOf(modelRoot.transform)} ({assets.Label}) for the {context}: a copy of a dressed model, {dm.Pieces.Count} of her renderers found");
+            Log.Info($"re-bound {U.PathOf(modelRoot.transform)} ({assets.Label}) for the {context}: a copy of a dressed model, {dm.Pieces.Count} of her renderers found; {PresentsText(dm)}");
+            if (Test.CousinTest.Probing) Test.CousinTest.ProbeDressed(dm);
             return dm;
         }
 
+        // ---------------------------------------------------------------- undressing
+
+        /// <summary>
+        /// Takes her off one model: the game renderers the mod switched off go back on, her objects (the marker root and
+        /// the pieces under the game's face slots) are destroyed, and the model is forgotten. Never throws.
+        /// </summary>
+        public static void Undress(DressedModel dm, string why)
+        {
+            if (dm == null) return;
+            Models.Remove(dm);
+            int back = 0, gone = 0;
+            try
+            {
+                // The presents go back to the game's joints first: her nodes go with her marker.
+                int given = Presents.GiveBack(dm);
+                if (given > 0) Log.Info($"{dm.Label}: {given} present entr(ies) and object(s) given back to the game's joints");
+                foreach (var r in dm.HiddenByMod)
+                    try { if (r != null && !r.enabled) { r.enabled = true; back++; } }
+                    catch { }
+                foreach (var p in dm.Pieces)
+                    try { if (p.UnderSlot && p.Go != null) { UnityEngine.Object.Destroy(p.Go); gone++; } }
+                    catch { }
+                if (dm.Marker != null) { UnityEngine.Object.Destroy(dm.Marker.gameObject); gone++; }
+                Log.Info($"undressed {(dm.Root != null ? U.PathOf(dm.Root.transform) : "a model")} ({dm.Label}): {why}; {back} game renderer(s) on again, {gone} of her object(s) removed");
+            }
+            catch (Exception e) { Log.Warn($"undressing {dm.Label}: {e.GetType().Name}: {e.Message}"); }
+        }
+
         // ---------------------------------------------------------------- every frame
+
+        /// <summary>Her pose this frame: Forever's clip on a state the style's map names (once the copy is baked), else the copy of the game's joints.</summary>
+        private static void Pose(DressedModel dm)
+        {
+            if (!ForeverPlayer.Step(dm)) dm.Follow();
+        }
 
         /// <summary>
         /// MelonMod.OnLateUpdate: for every live dressed model, the bones, the face, the layer, and every 0.5 s the game's
@@ -415,10 +513,19 @@ namespace LongLostCousins.Dressing
                 try
                 {
                     if (dm.Root == null || dm.Marker == null) { Models.RemoveAt(i); continue; }
-                    dm.Follow();
+                    Pose(dm);
                     dm.ApplyFace(false);
                     dm.FollowLayer();
-                    if (now >= dm.NextHide) { dm.HideGame(); dm.ApplyFace(true); dm.NextHide = now + 0.5f; }
+                    if (now >= dm.NextHide)
+                    {
+                        // Presents often arrive after dressing (0.02 to 0.25 s, measured): their own try, before the hide pass.
+                        TakePresents(dm);
+                        dm.HideGame();
+                        dm.ApplyFace(true);
+                        dm.NextHide = now + 0.5f;
+                    }
+                    // Last, so a face refresh above never leaves her antenna on under a hat that hides the game's.
+                    dm.FollowAntenna();
                     dm.Errors = 0;
                 }
                 catch (Exception e)

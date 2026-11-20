@@ -10,8 +10,10 @@ namespace LongLostCousins.Dressing
     /// <summary>
     /// Where the local player's cousin model is made, and which models to dress:
     /// the story stage player, its HUD copy and the ending (from the hooks), the walking cousin in the Plaza and on the
-    /// Prince's Ship (watched each LateUpdate), its UI copy (hook), and the model on the stage results (new cousin
-    /// models queued by OujiPresent.Start and matched against the results' holder).
+    /// Prince's Ship (watched each LateUpdate), its UI copy (hook), the model on the stage results (new cousin models
+    /// queued by OujiPresent.Start and matched against the results' holder), and the player's Prince in the places with
+    /// no hook of their own (star map, Cosmo, tutorial Plaza, mini theme, present collection popup): found by
+    /// <see cref="PlayersPrince(OujiPresent, out string, out string)"/> at OujiPresent.Start and dressed by SortPending.
     /// </summary>
     internal static class Contexts
     {
@@ -56,7 +58,7 @@ namespace LongLostCousins.Dressing
             if (!Chosen.Now || ui == null) return;
             string skip = StageSkip();
             if (skip != null) { Log.Debug("stage HUD copy not dressed: " + skip); return; }
-            Dresser.Dress(ui.gameObject, "stage HUD");
+            Dresser.Dress(ui.gameObject, Dresser.HudContext);
         }
 
         /// <summary>MainGameOuji.InitializeOujiByEndingCore, before it: the ending's player model.</summary>
@@ -157,19 +159,116 @@ namespace LongLostCousins.Dressing
             if (++_ownerTries >= 15) _ownerTries = -1;
         }
 
+        // ---------------------------------------------------------------- the player's Prince base
+
+        /// <summary>True when <paramref name="t"/> is <paramref name="root"/> or below it (12 levels at most).</summary>
+        private static bool Under(Transform t, Transform root)
+        {
+            if (t == null || root == null) return false;
+            IntPtr r = root.Pointer;
+            for (int i = 0; t != null && i < 12; i++, t = t.parent)
+                if (t.Pointer == r) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// For OujiPresent.Start, before it: true when this is a Prince model (_oujiID 0) that the mod's steered loads made
+        /// for the local player while she is worn. <paramref name="why"/> says which test answered (null when the model is
+        /// not a Prince or she is not worn: nothing to log). The tests, cheapest first: dressed already or a copy of a
+        /// dressed model; the stage's player or its HUD copy; the ending's player; the walking cousin of the Plaza or ship;
+        /// a model under a results holder (ResultMonoSetter / ResultAAMonoSetter.m_PlayCharacter); a model under a
+        /// ModelLoader's player object (ModelLoader._selectPlayerObject: where the ship's loader puts the walker, and the
+        /// star map's, Cosmo's, the tutorial Plaza's and the present collection popup's loaders put the player); the mini
+        /// theme's player (MiniThemeManager.Player). A Prince walking about as one of the other cousins is none of these.
+        /// <paramref name="label"/> is the place's name for a model no hook of its own dresses (null otherwise).
+        /// </summary>
+        public static bool PlayersPrince(OujiPresent op, out string why) => PlayersPrince(op, out why, out _);
+
+        public static bool PlayersPrince(OujiPresent op, out string why, out string label)
+        {
+            why = label = null;
+            if (op == null || op._oujiID != 0 || !Chosen.Now) return false;
+            var go = op.gameObject;
+            var t = go.transform;
+            if (Dresser.FindFor(go) != null) { why = "dressed already"; return true; }
+            if (Dresser.CarriesMarker(go)) { why = "a copy of a dressed model"; return true; }
+            var main = GameRefs.Main;
+            if (main != null && StageSkip() == null)
+            {
+                var mo = main.Ouji;
+                if (mo != null && Under(t, mo.transform)) { why = "the stage's player"; return true; }
+                for (var p = t; p != null; p = p.parent)
+                    if (p.GetComponent<UIMainGameOuji>() != null) { why = "the stage HUD's copy"; return true; }
+            }
+            var end = GameRefs.Global?.EndGameMan;
+            var eo = end != null ? end.Ouji : null;
+            if (eo != null && !GameRefs.IsMultiplay && Under(t, eo.transform)) { why = "the ending's player"; return true; }
+            var owner = PlazaOwnerModel();
+            if (owner != null && (Under(t, owner.transform) || Under(owner.transform, t))) { why = "the walking cousin"; return true; }
+            if (HeldBy(t, ResultHolders()) != null) { why = "under a results holder"; return true; }
+            foreach (var ml in UnityEngine.Object.FindObjectsOfType<ModelLoader>())
+            {
+                var sp = ml != null ? ml._selectPlayerObject : null;
+                if (sp != null && PlayerUnder(t, sp.transform))
+                {
+                    why = "under the model loader's player object";
+                    label = "player model (" + SceneName() + ")";
+                    return true;
+                }
+            }
+            foreach (var mm in UnityEngine.Object.FindObjectsOfType<MiniThemeManager>())
+            {
+                var pl = mm != null ? mm.Player : null;
+                if (pl != null && Under(t, pl.transform)) { why = "the mini theme's player"; label = "mini theme"; return true; }
+            }
+            why = "a Prince that is not the player's (one of the cousins walking about, or a context the mod does not steer)";
+            return false;
+        }
+
+        /// <summary>
+        /// True when <paramref name="t"/> is a model under a ModelLoader's player object as the player: directly under it
+        /// (the popup's ModelOnlyLoader), or inside the wrapper the player loaders name "Player" (the ship's, the star
+        /// map's, Cosmo's and the tutorial's; a cousin walking about gets a wrapper of another name).
+        /// </summary>
+        private static bool PlayerUnder(Transform t, Transform holder)
+        {
+            if (t == null || holder == null) return false;
+            IntPtr h = holder.Pointer;
+            if (t.parent != null && t.parent.Pointer == h) return true;
+            bool wrapper = false;
+            for (var p = t.parent; p != null; p = p.parent)
+            {
+                if (p.Pointer == h) return wrapper;
+                if (p.name == "Player") wrapper = true;
+            }
+            return false;
+        }
+
+        private static string SceneName()
+        {
+            try { return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name; }
+            catch { return "?"; }
+        }
+
         // ---------------------------------------------------------------- results (and copies of dressed models)
 
-        private struct Queued { public GameObject Go; public IntPtr Ptr; public float At; }
+        private struct Queued { public GameObject Go; public IntPtr Ptr; public float At; public string Label; }
         private static readonly List<Queued> Pending = new();
         private static float _nextSort;
 
-        /// <summary>OujiPresent.Start, after it: a cousin model's first frame. Queued to be sorted in LateUpdate.</summary>
-        public static void PresentStarted(OujiPresent p)
+        /// <summary>How many models this session were dressed as the player's in a place no hook of its own covers (star map, Cosmo, tutorial, popup, mini theme), for the test.</summary>
+        public static int SpawnDressed { get; private set; }
+
+        /// <summary>
+        /// OujiPresent.Start, after it: a cousin model's first frame. Queued to be sorted in LateUpdate. <paramref name="label"/>
+        /// names the place when Start found it to be the player's Prince in a place no hook of its own dresses.
+        /// </summary>
+        public static void PresentStarted(OujiPresent p, string label)
         {
             if (!Chosen.Now || p == null) return;
             var go = p.gameObject;
             if (Pending.Count >= 64) Pending.RemoveAt(0);
-            Pending.Add(new Queued { Go = go, Ptr = go.Pointer, At = Time.unscaledTime });
+            Pending.Add(new Queued { Go = go, Ptr = go.Pointer, At = Time.unscaledTime, Label = label });
         }
 
         /// <summary>The results' holders (ResultMonoSetter / ResultAAMonoSetter.m_PlayCharacter), looked up once per sorting round.</summary>
@@ -218,6 +317,15 @@ namespace LongLostCousins.Dressing
                 if (Dresser.CarriesMarker(q.Go))
                 {
                     Dresser.Dress(q.Go, "copy");
+                    Pending.RemoveAt(i);
+                    continue;
+                }
+                // The player's Prince in a place with no hook of its own (the star map, Cosmo, the tutorial Plaza, the
+                // present collection popup, the mini theme). A short wait first, so a place that does have its own
+                // (the ship's walker, whose loader is the same) dresses it under its own name.
+                if (q.Label != null && now - q.At >= 0.3f)
+                {
+                    if (Dresser.Dress(q.Go, q.Label) != null) { SpawnDressed++; Log.Info($"dressed the player's model in a place without its own hook: {q.Label}"); }
                     Pending.RemoveAt(i);
                     continue;
                 }

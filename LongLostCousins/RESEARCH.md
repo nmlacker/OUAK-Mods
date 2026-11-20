@@ -289,6 +289,42 @@ Things learned on the way:
   name her, because the getter has about 65 callers.
 - `GlobalSaveData.CheckNewFlag` throws for an index past its arrays, so the mod answers it for 100.
 
+### Slice three: Burda as her own cousin (2026-11-20)
+The user asked for the old style to play the old animations and the new style the new ones, for presents, for the HUD
+and the places that don't show her, and: "Don't replace whatever Cousin the Player is currently using. Make Burda her
+own separate Cousin, like every other Cousin."
+
+What does "her own cousin" mean in the mod now? Picking her never changes the save: the cousin you had stays saved
+(Cousin Creator cousins too), and the save never holds her or the Prince because of her. While she is worn, every load
+of your model builds the Prince as a hidden base (the run-time id `_nowCharacterID` is set to 0 before stage and ending
+loads, and the save getter reads 0 only inside one synchronous call of a player-model loader or of `OujiPresent.Start`
+on a model those loads made). She is dressed over that base with her own joint positions. A hidden game model can't be
+avoided: the katamari, faces, presents and HUD all work on the game's own model.
+
+Why the Prince? Each cousin has its own Animator controller (78 controllers for 155 prefabs, most change some of the
+Prince's clips), and her new-style joints are the Prince's. So the new style plays the Prince's own `acOuji0000`
+motions by following the base. The old style plays Katamari Forever's own motions, read and baked at start (off the
+main thread, about 60 ms) from the player's own Forever copy, chosen by the base Animator's state and timed from its
+normalized time. Without a copy it plays OUAK's motions. Nothing from Forever ships beyond a state-to-clip map, a joint
+map, the scale and the files' hashes.
+
+Presents: the game hangs each present on the joint its `PresentData._boneTransform` names, so the mod points those at
+attach nodes under her joints and the game does the rest. Skinned body suits stay hidden. Stage costumes (race,
+snorkel, space, camp) are made on every stage and kept switched off outside their own stage.
+
+The HUD copy is drawn at a fixed scale for every cousin; the mod scales hers (0.966 in the new style, from the probe,
+not a measured framing). The purple object by her HUD copy is stage scenery.
+
+What did the in-game tests show (save set to cousin 6 in memory)? Stage runs: 202 and 199 passes in the two styles with
+2 FAILs each from the test wrongly expecting stage costumes to be switched on (fixed in the test); then with Forever:
+old style 237/0, new style 206/0, old style without Forever 201/0. The save's cousin and custom index stayed the same
+through confirm, stage load and turning her off; the base was the Prince on the ship, in the stage and in the HUD; her
+joints matched the Forever bake on two states each on the ship, in the stage and in the HUD copy.
+
+Not proven yet: the Plaza walker and the Plaza swap, OujiStar, Cosmo, the tutorial, the mini theme, the present popup,
+both results screens and the ending (all hooked, none reached by the test); the old style's hat offset (from her model
+data); the HUD scale; Forever's speed on the ship and in the Plaza beyond the idle rows checked.
+
 ### Left undecided (by the user's choice, 2026-11-12)
 - No-name cousins (Robot, Fishbowl, Katamari, Record, Calendar, Red, Black, V-Cousin, Parking, Rainbow).
 - The five names with no known look (Bacbaci, Pandoring, Tempero, Snou, Crio).

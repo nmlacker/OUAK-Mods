@@ -1,5 +1,5 @@
 {
- "about": "The cousins the mod can dress the player as, one entry each. 'styles' maps a style key to its .llcm file, relative to this folder (format in FORMAT.md). 'icons' maps a style key to her select-screen icon (a PNG made by Tools/render_icons.py), relative to this folder. 'build' is read only by Tools/export_llcm.py and Tools/check_llcm.py; its paths are relative to the LongLostCousins folder.",
+ "about": "The cousins the mod can dress the player as, one entry each. 'styles' maps a style key to its .llcm file, relative to this folder (format in FORMAT.md). 'icons' maps a style key to her select-screen icon (a PNG made by Tools/render_icons.py), relative to this folder. 'build' is read only by Tools/export_llcm.py and Tools/check_llcm.py; its paths are relative to the LongLostCousins folder. 'fit' maps a style key to how the player's presents and the stage HUD fit her: 'joint_offsets' (a game joint's name to [x, y, z] cm from her joint of that name, in her joint's axes), 'present_offsets' (a present id to [x, y, z] cm added to its joint's), 'cannot_wear' (present ids she never shows; skinned body suits are never shown anyway), 'hud_scale' and 'hud_offset' (her size and place in the stage HUD's copy of the player only). 'forever' maps a style key to what it needs to play Katamari Forever's motions from the player's own copy (FORMAT.md): 'scale' (her cm per Forever unit), 'axes' (her axis i is axes[i] times Forever's), 'joints' (her joint to the Forever Prince's node that drives it; other joints keep their rest pose), 'states' (an OUAK Animator state name to [pack, slot] of the Forever clip played in it; other states play OUAK's motion). No Forever data is here: the curves, lengths, speeds, loops and faces are read from the player's copy.",
  "version": 1,
  "cousins": [
   {
@@ -17,7 +17,34 @@
     "new": "new style (OUAK)",
     "old": "old style (Katamari Forever)"
    },
-   "notes": "Cousin 26 of the cancelled Katamari Damacy Online, a singer whose head is a sideways microphone. Both styles use OUAK's 23 joint names and rest at identity. The new style has a piece for each of OUAK's 23 face slots plus her singing eyes; the old style shows one of 11 face cards. The old style plays OUAK's motions for now, with her waist 7.415 cm higher than the Prince's.",
+   "notes": "Cousin 26 of the cancelled Katamari Damacy Online, a singer whose head is a sideways microphone. Both styles use OUAK's 23 joint names and rest at identity. The new style has a piece for each of OUAK's 23 face slots plus her singing eyes; the old style shows one of 11 face cards. The old style plays Katamari Forever's motions read from the player's own copy where 'forever' names a clip, and OUAK's motions elsewhere (or everywhere without a copy), with her waist 7.415 cm higher than the Prince's.",
+   "fit": {
+    "new": {
+     "notes": "Her joints are the Prince's, so his presents sit on her with no offset. hud_scale: in the stage HUD (probe, idle) she was 294 px wide against the hidden Prince's 284 px, so 284/294. The Prince's width is the bounds of his switched-off renderers, presents included, which Unity may not keep up to date; a later pose gave 285 against 283. A rough value, not a measured framing; the probe saw no clipping at 1.",
+     "joint_offsets": {},
+     "present_offsets": {},
+     "cannot_wear": [],
+     "hud_scale": 0.966,
+     "hud_offset": [0, 0, 0]
+    },
+    "old": {
+     "notes": "First offset from her own model, not yet measured in the game: her head top (the microphone, away from the antenna) is 21.061 cm above her JNT_head against the Prince's 14.046 cm (y), and her face front is 3.547 cm further forward than his (z). Her numbers are from burda_old.llcm; the Prince's from the bounds of his head_m (top 88.89, front 15.22) against his JNT_head at 74.844, from the rig check made for this mod. hud_scale: in the stage HUD (probe) she was 284 px wide, as wide as the hidden Prince.",
+     "joint_offsets": { "JNT_head": [0, 7.015, 3.547] },
+     "present_offsets": {},
+     "cannot_wear": [],
+     "hud_scale": 1.0,
+     "hud_offset": [0, 0, 0]
+    }
+   },
+   "forever": {
+    "old": {
+     "notes": "Map from the slice-one research (burda_rig_spec.json old_style.forever_motions, forever_clip_map.json; the clip choices are this mod's). Her old-style joints were built from the Forever Prince's rig at 0.211 m per unit, and Forever's axes become hers turned 180 degrees about y: (x, y, z) -> 21.1 (-x, y, -z).",
+     "scale": 21.1,
+     "axes": [-1, 1, -1],
+     "joints": {"JNT_root": 1, "JNT_waist": 11, "JNT_head": 18, "JNT_antenna": 23, "JNT_arm_R": 19, "JNT_arm_L": 20, "JNT_leg_R": 21, "JNT_leg_L": 22, "JNT_elbow_R": 24, "JNT_elbow_L": 25, "JNT_knee_R": 26, "JNT_knee_L": 27, "JNT_hand_R": 28, "JNT_hand_L": 29, "JNT_ankle_R": 30, "JNT_ankle_L": 31},
+     "states": {"0000": [1, 1], "0001": [1, 7], "0002": [1, 9], "0003": [1, 10], "0004": [1, 11], "0005": [1, 13], "0006": [1, 12], "0007": [1, 51], "0008": [1, 52], "0013": [1, 28], "0014": [1, 31], "0015": [1, 30], "0016": [1, 44], "0017": [1, 43], "0018": [1, 59], "0019": [1, 60], "0020": [1, 62], "0021": [1, 61], "0022": [1, 2], "0023": [1, 95], "0025": [1, 97], "0027": [1, 73], "0028": [1, 2], "1125": [1, 6], "0030": [1, 98], "0031": [1, 102], "0032": [2, 110], "0034": [2, 141], "0035": [1, 99], "0036": [2, 138], "0039": [2, 116], "0040": [1, 29], "0041": [2, 103], "0042": [2, 112], "0048": [2, 104], "0050": [2, 117], "0054": [1, 100], "0055": [1, 3], "0060": [1, 83], "0065": [1, 101], "0093": [1, 9], "0097": [2, 118], "0098": [2, 133], "0100": [2, 118], "0101": [1, 153], "0106": [2, 107]}
+    }
+   },
    "build": {
     "blend": {
      "new": "Models/Burda/new_style/Burda_new.blend",
