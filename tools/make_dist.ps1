@@ -10,11 +10,13 @@ $dist = Join-Path $src "dist"
 $build = Join-Path $dist "build"
 
 # The released mods, in modpack order. Song Selector isn't released yet.
+# Project is the .csproj under ModMenuSource when it isn't <Name>\<Name>.csproj.
 $mods = @(
     @{ Name = "OUAKModAPI";      Title = "OUAK Modding API"; Text = "the base the other mods need (required)"; UserLibs = $true },
     @{ Name = "OUAKModMenu";     Title = "OUAK Mod Menu";    Text = "the mod menu (freebies, the stage clock, stages, unlocks, backups...)" },
     @{ Name = "OUAKMultiplayer"; Title = "OUAK Multiplayer"; Text = "online play (everyone in a session needs the same version)" },
-    @{ Name = "OUAKDashBar";     Title = "OUAK Dash Bar";    Text = "your Prince Dash on the game's own dash gauge" }
+    @{ Name = "OUAKDashBar";     Title = "OUAK Dash Bar";    Text = "your Prince Dash on the game's own dash gauge" },
+    @{ Name = "LongLostCousins"; Title = "Long Lost Cousins"; Text = "play as cousins the game never shipped (Burda, Circuit, Pis, Pew)"; Project = "LongLostCousins\Mod\LongLostCousins.csproj" }
 )
 
 # A mod's version, from its MelonInfo: a literal there, or the Version constant it names.
@@ -38,7 +40,8 @@ New-Item -ItemType Directory -Force -Path $build | Out-Null
 foreach ($m in $mods) {
     $m.Version = Get-ModVersion $m.Name
     $out = Join-Path $build $m.Name
-    $log = & dotnet build (Join-Path $src "$($m.Name)\$($m.Name).csproj") -c Release -p:NoInstall=true "-p:OutDir=$out\" -nologo -v:q 2>&1
+    $proj = if ($m.Project) { $m.Project } else { "$($m.Name)\$($m.Name).csproj" }
+    $log = & dotnet build (Join-Path $src $proj) -c Release -p:NoInstall=true "-p:OutDir=$out\" -nologo -v:q 2>&1
     if ($LASTEXITCODE -ne 0) { $log | Select-String "error" | ForEach-Object { $_.Line }; throw "build of $($m.Name) failed" }
     $m.Dll = Join-Path $out "$($m.Name).dll"
     if (-not (Test-Path $m.Dll)) { throw "no $($m.Dll)" }
