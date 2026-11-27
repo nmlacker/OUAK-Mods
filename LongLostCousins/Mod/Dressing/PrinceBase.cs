@@ -75,7 +75,7 @@ namespace LongLostCousins.Dressing
             Hooks.ClearPresentMarks();
             try
             {
-                bool want = (Settings.Active && Settings.CousinId == SelectScreen.CousinId) || Dresser.Models.Count > 0;
+                bool want = (Settings.Active && Settings.Cousin != null) || Dresser.Models.Count > 0;
                 if (want && _set == null && !_failed) Install();
                 else if (!want && _set != null) Uninstall();
             }

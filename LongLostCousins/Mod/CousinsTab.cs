@@ -23,9 +23,9 @@ namespace LongLostCousins
         private static void Draw()
         {
             ImUi.Title("Long Lost Cousins");
-            ImUi.Hint("Play as a cousin the game never shipped. Burda is also one more cousin on the game's own select screen " +
-                      "(The Prince & Cousins, page 4). Picking her there or here makes you Burda, and the game's save keeps your own " +
-                      "cousin: nothing in the save changes. Under her the game builds the Prince, whoever your own cousin is.");
+            ImUi.Hint("Play as a cousin the game never shipped. Each one is also a cousin on the game's own select screen " +
+                      "(The Prince & Cousins, page 4). Picking one there or here makes you that cousin, and the game's save keeps your own " +
+                      "cousin: nothing in the save changes. Under the cousin you wear the game builds the Prince, whoever your own cousin is.");
 
             ImUi.Header("Who are you?");
             if (ImGui.RadioButton("Off (the game's own cousin)", !Settings.Active)) Choose(null, null);
@@ -40,14 +40,14 @@ namespace LongLostCousins
                 }
             if (Settings.MemoryOnly) ImUi.Hint("The cousin test is running: this choice is not saved.");
             if (Settings.OnScreen) ImUi.Hint("Picked on the select screen.");
-            ImUi.Hint("She comes off by herself when your save's cousin changes: another cousin picked on the select screen, a " +
+            ImUi.Hint("The cousin you picked comes off by itself when your save's cousin changes: another cousin picked on the select screen, a " +
                       "swap in the Plaza, the Cousin Creator, or another save slot loaded. Your own cousin is back then.");
 
             ImUi.Hint("The change shows the next time the game loads your cousin: the next stage, the next visit to the Plaza " +
                       "or the Prince's Ship, or a cousin change there.");
             ImUi.Hint("Dressed: your cousin in story stages and the stage's corner picture, the Plaza and the Prince's Ship " +
                       "(and the picture of you there), the stage results and the ending.");
-            ImUi.Hint("On the select screen her slot shows the style picked here (the next time the screen opens).");
+            ImUi.Hint("On the select screen each cousin's slot shows the style picked here (the next time the screen opens).");
             ImUi.Hint("Not dressed: the select screen's own pictures, online battles, OUAK Multiplayer (others there see the game's " +
                       "own cousin), the mini theme, the present collection, the Cousin Creator, the star map, Cosmo, the " +
                       "tutorial Plaza, and the stage where the game always plays the Prince.");
@@ -90,12 +90,12 @@ namespace LongLostCousins
             }
             if (Chosen.On && !Hooks.Installed) ImUi.Err("The mod's hooks are not in place; see the log.");
             else if (Chosen.On && Hooks.Count < Hooks.Expected) ImUi.Err($"Only {Hooks.Count} of the mod's {Hooks.Expected} hooks could be made; see the log.");
-            if (!SelectScreen.Ready) ImUi.Err("Burda could not be added to the game's select screen; see the log. She can still be picked here, " +
-                                              "but on the ship, in the Plaza, on stages and in the ending she is only shown while your own cousin is the Prince.");
+            if (!SelectScreen.Ready) ImUi.Err("The cousins could not be added to the game's select screen; see the log. They can still be picked here, " +
+                                              "but on the ship, in the Plaza, on stages and in the ending they are only shown while your own cousin is the Prince.");
             else if (SelectScreen.ScopeFailed) ImUi.Err("The select screen's marker hooks could not be made; see the log. Its current-cousin marker stays " +
-                                                        "on your own cousin, and on the ship and in the Plaza she is only shown while that cousin is the Prince.");
+                                                        "on your own cousin, and on the ship and in the Plaza the cousin you wear is only shown while that cousin is the Prince.");
             else if (Settings.Active && PrinceBase.Installed && PrinceBase.Count < PrinceBase.Expected)
-                ImUi.Err($"Only {PrinceBase.Count} of the {PrinceBase.Expected} hooks that build the Prince under her could be made; see the log.");
+                ImUi.Err($"Only {PrinceBase.Count} of the {PrinceBase.Expected} hooks that build the Prince under the cousin you wear could be made; see the log.");
             if (Dresser.LastProblem != null) ImUi.Hint("Last model left as it was: " + Dresser.LastProblem);
         }
 

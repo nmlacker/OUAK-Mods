@@ -138,7 +138,7 @@ namespace LongLostCousins.Test
             if (onNode)
             {
                 string joint = Presents.GameJointOf(node.name);
-                var off = dm.Assets.Fit.OffsetFor(joint, e.Id);
+                var off = dm.Assets.Fit.OffsetFor(joint, e.Id, (int)e.Pd._type);
                 var offV = U.V3(off[0], off[1], off[2]);
                 float cm = Math.Abs(dm.Marker.lossyScale.y);
                 if (cm <= 0f) cm = 1f;

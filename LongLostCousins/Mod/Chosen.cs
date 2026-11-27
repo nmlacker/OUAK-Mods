@@ -26,8 +26,8 @@ namespace LongLostCousins
         /// <summary>The result of the last <see cref="Refresh"/> (cheap: for per-frame checks).</summary>
         public static bool On => _on;
 
-        /// <summary>An id that may stand in the save: not negative and not the mod's 100.</summary>
-        public static bool IsStorableId(int id) => id >= 0 && id != SelectScreen.ModId;
+        /// <summary>An id that may stand in the save: not negative and not one of the mod's select-screen ids (100 to 199).</summary>
+        public static bool IsStorableId(int id) => id >= 0 && !Data.Catalog.IsScreenId(id);
 
         /// <summary>The cousin the save holds now (GlobalSaveData.GetSelectPlayerId, outside every scope of the mod), or -1.</summary>
         public static int SavedCousin()

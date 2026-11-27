@@ -41,15 +41,67 @@ ROLES = ('face', 'eye', 'mouth', 'overlay')
 TOL_CM = 1e-4          # positions and joints, cm
 TOL_N = 1e-5           # unit normals
 TOL_UV = 1e-6
-# The design's waist offsets (FOLW), cm.
+# The design's waist offsets (FOLW), cm: by style, unless the cousin's design has its own (Pew's waist rests 12.345 cm
+# lower than the Prince's).
 DESIGN_FOLLOW = {'new': (0.0, 0.0, 0.0), 'old': (0.0, 7.415, 0.0)}
-# The design's group-26 override for the new style: she sings where the Prince whistles.
-DESIGN_GROUP26 = {'show': {'eye_sing_m', 'mouth_05_m'}, 'hide': {'eye_01_m', 'eye_03_m', 'mouth_10_m'}}
+DESIGN_FOLLOW_COUSIN = {('pew', 'new'): (0.0, -12.345, 0.0)}
+# The rig spec that holds the OUAK Prince's measured joints (OUJI01_D): the FOLW offset is her waist minus his.
+PRINCE_RIG_SPEC = 'Models/Burda/burda_rig_spec.json'
+# Each design's group-26 override for the new style: Burda sings and Circuit hums where the Prince whistles, Pew aims;
+# Pis has none.
+DESIGN_GROUP26 = {
+    'burda': {'show': {'eye_sing_m', 'mouth_05_m'}, 'hide': {'eye_01_m', 'eye_03_m', 'mouth_10_m'}},
+    'circuit': {'show': {'eye_hum_m', 'mouth_05_m'}, 'hide': {'eye_01_m', 'eye_03_m', 'mouth_10_m'}},
+    'pew': {'show': {'eye_aim_m'}, 'hide': {'eye_01_m', 'eye_03_m'}},
+    'pis': {'show': set(), 'hide': set()},
+}
 # Counts and volumes the research measured on the .blend files (burda_data_and_units.md), as an outside cross-check.
 RESEARCH = {
     ('burda', 'new'): dict(meshes=32, tris=5941, verts=4195, hidden=21, volumes={'head_m': 59313, 'body_m': 24387}),
     ('burda', 'old'): dict(meshes=17, tris=587, verts=974, hidden=10, volumes={'head': 45162, 'body': 18462}),
 }
+
+
+class FaceMapError(Exception):
+    pass
+
+
+def fail(msg):
+    raise FaceMapError(msg)
+
+
+def _read_json(path):
+    with open(path, encoding='utf-8') as fh:
+        return json.load(fh)
+
+
+def read_face_map(path, load=None):
+    """A cousin's face_map.json with its cousin-named keys (<id>_old_cards, <id>_new_pieces) also under the plain names
+    old_cards and new_pieces, and each list its 'shared' block points to (forever_expressions, old_style_rows) read from
+    that other face map, its cards matched by card number: card k here stands where the other cousin's card k stands."""
+    if load is None:
+        load = _read_json
+    fm = load(path)
+    for plain in ('old_cards', 'new_pieces'):
+        keys = [k for k in fm if k.endswith('_' + plain)]
+        if len(keys) != 1:
+            fail('%s: expected one *_%s key, found %s' % (path, plain, keys))
+        fm[plain] = fm[keys[0]]
+    for key, src in (fm.get('shared') or {}).items():
+        if key == 'note':
+            continue
+        if key in fm:
+            fail('%s: %s is both its own and shared' % (path, key))
+        other = read_face_map(os.path.join(LLC, src), load)
+        number = {name: k for k, name in other['old_cards'].items()}
+        out = []
+        for e in other[key]:
+            k = number.get(e['card'])
+            if k is None or k not in fm['old_cards']:
+                fail('%s: shared %s names card %s, which has no number here' % (path, key, e['card']))
+            out.append(dict(e, card=fm['old_cards'][k]))
+        fm[key] = out
+    return fm
 
 RAW_DUMP = r'''
 import bpy, sys, json
@@ -451,8 +503,7 @@ def check_file(path, args, R, cj):
     R('INFO name, marker and source', info['name'] == entry['name'] and info['marker'] == 'llc_%s_%s' % (
         entry['name'], style) and info['source'] == os.path.basename(blend),
       '%s, %s, %s' % (info['name'], info['marker'], info['source']))
-    with open(os.path.join(LLC, build['face_map']), encoding='utf-8') as fh:
-        fm = json.load(fh)
+    fm = read_face_map(os.path.join(LLC, build['face_map']))
     with open(os.path.join(LLC, build['rig_spec']), encoding='utf-8') as fh:
         spec_all = json.load(fh)
     spec = spec_all[build['rig_spec_block'][style]]['joints']
@@ -507,11 +558,13 @@ def check_file(path, args, R, cj):
             R('Blender bones rest at identity', d_rot < 1e-5, 'largest element off by %.1e' % d_rot)
 
     # ---- FOLW
-    prince_waist = w2u(spec_all['new_style']['joints']['JNT_waist']['head'])
+    with open(os.path.join(LLC, PRINCE_RIG_SPEC), encoding='utf-8') as fh:
+        prince_waist = w2u(json.load(fh)['new_style']['joints']['JNT_waist']['head'])
     fl = f['follow']
     ok = len(fl) == 1 and fl[0]['joint'] == waist and fl[0]['mode'] == 1
     d_off = float(np.abs(fl[0]['offset'] - (acc[waist] - prince_waist)).max()) if ok else 1e9
-    d_des = float(np.abs(fl[0]['offset'] - np.array(DESIGN_FOLLOW[style])).max()) if ok else 1e9
+    design = DESIGN_FOLLOW_COUSIN.get((info['id'], style), DESIGN_FOLLOW[style])
+    d_des = float(np.abs(fl[0]['offset'] - np.array(design)).max()) if ok else 1e9
     R('FOLW: one entry, JNT_waist, mode 1', ok)
     R('FOLW offset = her waist - the Prince\'s waist, and equals the design', d_off <= TOL_CM and d_des <= TOL_CM,
       'offset %s, differences %.1e / %.1e cm' % (np.round(fl[0]['offset'], 4).tolist() if fl else None, d_off, d_des))
@@ -557,8 +610,8 @@ def check_file(path, args, R, cj):
         raw is None or sorted(mn) == sorted(rmeshes)), '%d meshes' % len(M))
     slot_names = slot_doc['faceObject'] if slot_doc else [s(i) for i in f['face']['slots']]
     offs = slot_doc['offsets'] if slot_doc else {'eye': 0, 'face': 5, 'mouth': 8, 'parts': 19}
-    card_no = {name: int(k) for k, name in fm['burda_old_cards'].items()}
-    extras = {n for n in fm['burda_new_pieces'] if not (n.endswith('_m') and n[:-2] in slot_names)}
+    card_no = {name: int(k) for k, name in fm['old_cards'].items()}
+    extras = {n for n in fm['new_pieces'] if not (n.endswith('_m') and n[:-2] in slot_names)}
     group0 = sorted(fm['ouak_groups'], key=lambda g: g['group'])[0]
     visible_start = ({group0['old_style_card']} if cards_style else
                      {group0['new_style'][r] for r in ROLES if group0['new_style'][r]})
@@ -716,8 +769,9 @@ def check_file(path, args, R, cj):
     R('FACE groups equal face_map.json (slots, pieces, cards, blinks, overrides)', ok_groups, '%d groups' % len(fc['groups']))
     if not cards_style and len(fc['groups']) > 26:
         g26 = fc['groups'][26]
-        R('FACE group 26 is the design\'s singing override', {mn[i] for i in g26['show']} == DESIGN_GROUP26['show']
-          and {mn[i] for i in g26['hide']} == DESIGN_GROUP26['hide'],
+        d26 = DESIGN_GROUP26.get(info['id'], {'show': None, 'hide': None})
+        R('FACE group 26 is the design\'s singing override', {mn[i] for i in g26['show']} == d26['show']
+          and {mn[i] for i in g26['hide']} == d26['hide'],
           'show %s, hide %s' % (sorted(mn[i] for i in g26['show']), sorted(mn[i] for i in g26['hide'])))
         R('FACE: only group 26 has an override', all(not (g['show'] or g['hide']) for k, g in enumerate(fc['groups'])
                                                     if k != 26))

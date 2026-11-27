@@ -38,8 +38,8 @@ namespace LongLostCousins.Dressing
         public static string GameJointOf(string node)
         {
             string s = node.Substring(AttPrefix.Length);
-            int hash = s.IndexOf('#');
-            return hash >= 0 ? s.Substring(0, hash) : s;
+            int cut = s.IndexOfAny(NameMarks);
+            return cut >= 0 ? s.Substring(0, cut) : s;
         }
 
         /// <summary>True when <paramref name="t"/> is <paramref name="root"/> or below it.</summary>
@@ -105,7 +105,7 @@ namespace LongLostCousins.Dressing
                     if (IsNode(bone)) GiveBackEntry(dm, pd, bone);
                     continue;
                 }
-                var node = NodeFor(dm, bone, id);
+                var node = NodeFor(dm, bone, id, (int)pd._type);
                 if (node == null) continue;
                 if (bone.Pointer != node.Pointer) pd._boneTransform = node;
                 n++;
@@ -176,13 +176,13 @@ namespace LongLostCousins.Dressing
         /// Her attach node for a present on <paramref name="bone"/> (a game joint, or one of her nodes in this model or
         /// in the model a copy was made from), made when missing. Null when no game joint of that name is in this model.
         /// </summary>
-        private static Transform NodeFor(DressedModel dm, Transform bone, int id)
+        private static Transform NodeFor(DressedModel dm, Transform bone, int id, int type)
         {
             string joint;
             Transform game;
             if (IsNode(bone))
             {
-                if (Under(bone, dm.Marker) && bone.name == NodeName(GameJointOf(bone.name), id, dm)) return bone;
+                if (Under(bone, dm.Marker) && bone.name == NodeName(GameJointOf(bone.name), id, type, dm)) return bone;
                 joint = GameJointOf(bone.name);
                 game = GameJoint(dm, joint);
             }
@@ -196,12 +196,12 @@ namespace LongLostCousins.Dressing
                 if (Once.Add("nojoint|" + joint)) Log.Warn($"{dm.Label}: a present hangs on {joint}, which this model does not have; left as it is");
                 return null;
             }
-            string name = NodeName(joint, id, dm);
+            string name = NodeName(joint, id, type, dm);
             var parent = HerJointFor(dm, game, joint);
             var node = parent.Find(name);
             if (node != null) return node;
 
-            var off = dm.Assets.Fit.OffsetFor(joint, id);
+            var off = dm.Assets.Fit.OffsetFor(joint, id, type);
             var go = new GameObject(name);
             go.layer = dm.BodyLayer;
             node = go.transform;
@@ -222,9 +222,20 @@ namespace LongLostCousins.Dressing
             return node;
         }
 
-        /// <summary>The node's name: one per game joint, and one per present id that has its own offset.</summary>
-        private static string NodeName(string joint, int id, DressedModel dm) =>
-            AttPrefix + joint + (dm.Assets.Fit.PresentOffsets.ContainsKey(id) ? "#" + id : "");
+        /// <summary>
+        /// The node's name: one per game joint, one per joint and present type that has its own offset (<c>@FACE</c>),
+        /// and one per present id that has its own offset (<c>#120</c>).
+        /// </summary>
+        private static string NodeName(string joint, int id, int type, DressedModel dm)
+        {
+            var fit = dm.Assets.Fit;
+            string s = AttPrefix + joint;
+            if (fit.TypeOffsets.ContainsKey(type) && type >= 0 && type < Data.StyleFit.TypeNames.Length) s += "@" + Data.StyleFit.TypeNames[type];
+            if (fit.PresentOffsets.ContainsKey(id)) s += "#" + id;
+            return s;
+        }
+
+        private static readonly char[] NameMarks = { '@', '#' };
 
         /// <summary>Her joint of the game joint's name, else of its nearest parent she has, else her marker (model level).</summary>
         private static Transform HerJointFor(DressedModel dm, Transform game, string name)

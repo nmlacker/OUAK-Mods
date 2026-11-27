@@ -1,0 +1,622 @@
+{
+ "about": "Pew's face map, rebuilt by Tools/import_llcm.py from pew_new.llcm. file_show and file_hide are the file's own lists, kept to compare with a re-export.",
+ "blink": {
+  "ouak": {
+   "blinkEyeType": 2,
+   "blink_eye": "eye_03",
+   "open_seconds": 3.0,
+   "closed_seconds": 0.15
+  },
+  "new_style": "eye_03_m for 0.15 s every 3 s on groups that blink",
+  "old_style": "none: this cousin has no old style"
+ },
+ "pew_new_pieces": {
+  "eye_01_m": "",
+  "eye_02_m": "",
+  "eye_03_m": "",
+  "eye_04_m": "",
+  "eye_05_m": "",
+  "face_01_m": "",
+  "face_02_m": "",
+  "face_03_m": "",
+  "mouth_01_m": "",
+  "mouth_02_m": "",
+  "mouth_03_m": "",
+  "mouth_04_m": "",
+  "mouth_05_m": "",
+  "mouth_06_m": "",
+  "mouth_07_m": "",
+  "mouth_08_m": "",
+  "mouth_09_m": "",
+  "mouth_10_m": "",
+  "mouth_11_m": "",
+  "angry_01_m": "",
+  "cheak_01_m": "",
+  "shock_01_m": "",
+  "tear_01_m": "",
+  "eye_aim_m": ""
+ },
+ "pew_old_cards": {},
+ "ouak_slots": [
+  {
+   "slot": "eye_01"
+  },
+  {
+   "slot": "eye_02"
+  },
+  {
+   "slot": "eye_03"
+  },
+  {
+   "slot": "eye_04"
+  },
+  {
+   "slot": "eye_05"
+  },
+  {
+   "slot": "face_01"
+  },
+  {
+   "slot": "face_02"
+  },
+  {
+   "slot": "face_03"
+  },
+  {
+   "slot": "mouth_01"
+  },
+  {
+   "slot": "mouth_02"
+  },
+  {
+   "slot": "mouth_03"
+  },
+  {
+   "slot": "mouth_04"
+  },
+  {
+   "slot": "mouth_05"
+  },
+  {
+   "slot": "mouth_06"
+  },
+  {
+   "slot": "mouth_07"
+  },
+  {
+   "slot": "mouth_08"
+  },
+  {
+   "slot": "mouth_09"
+  },
+  {
+   "slot": "mouth_10"
+  },
+  {
+   "slot": "mouth_11"
+  },
+  {
+   "slot": "angry_01"
+  },
+  {
+   "slot": "cheak_01"
+  },
+  {
+   "slot": "shock_01"
+  },
+  {
+   "slot": "tear_01"
+  }
+ ],
+ "ouak_groups": [
+  {
+   "group": 0,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_01",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_01_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 1,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 2,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_04",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_04_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 3,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_05",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_05_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 4,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 5,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 6,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_10",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_10_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 7,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 8,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_04",
+    "mouth": "mouth_06",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_06_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 9,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_04",
+    "mouth": "mouth_05",
+    "overlay": "angry_01"
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_05_m",
+    "overlay": "angry_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 10,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_04",
+    "overlay": "cheak_01"
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_04_m",
+    "overlay": "cheak_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 11,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_04",
+    "overlay": "cheak_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_04_m",
+    "overlay": "cheak_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 12,
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": "shock_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": "shock_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 13,
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_04",
+    "mouth": "mouth_02",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_02_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 14,
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_04",
+    "mouth": "mouth_02",
+    "overlay": "tear_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_02_m",
+    "overlay": "tear_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 15,
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_04",
+    "mouth": "mouth_05",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_04_m",
+    "mouth": "mouth_05_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 16,
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_02",
+    "mouth": "mouth_08",
+    "overlay": "angry_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_08_m",
+    "overlay": "angry_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 17,
+   "ouak": {
+    "face": "face_03",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": "tear_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_03_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": "tear_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 18,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 19,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 20,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_03",
+    "mouth": "mouth_09",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_03_m",
+    "mouth": "mouth_09_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 21,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_11",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_11_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 22,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_03",
+    "mouth": "mouth_07",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_03_m",
+    "mouth": "mouth_07_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 23,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_03",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_03_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 24,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_02",
+    "mouth": "mouth_06",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_06_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 25,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_08",
+    "overlay": null
+   },
+   "blinks": true,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_01_m",
+    "mouth": "mouth_08_m",
+    "overlay": null
+   },
+   "file_show": [],
+   "file_hide": []
+  },
+  {
+   "group": 26,
+   "ouak": {
+    "face": "face_01",
+    "eye": "eye_01",
+    "mouth": "mouth_10",
+    "overlay": null
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_01_m",
+    "eye": "eye_aim_m",
+    "mouth": "mouth_10_m",
+    "overlay": null
+   },
+   "file_show": [
+    "eye_aim_m"
+   ],
+   "file_hide": [
+    "eye_01_m",
+    "eye_03_m"
+   ]
+  },
+  {
+   "group": 27,
+   "ouak": {
+    "face": "face_02",
+    "eye": "eye_02",
+    "mouth": "mouth_10",
+    "overlay": "shock_01"
+   },
+   "blinks": false,
+   "new_style": {
+    "face": "face_02_m",
+    "eye": "eye_02_m",
+    "mouth": "mouth_10_m",
+    "overlay": "shock_01_m"
+   },
+   "file_show": [],
+   "file_hide": []
+  }
+ ]
+}

@@ -1,39 +1,49 @@
 # Long Lost Cousins
 
-Long Lost Cousins lets you play Once Upon a KATAMARI as a cousin the game never shipped. Version 0.1.0 has one of
-them: Burda, the singer whose head is a sideways microphone, a cousin from the cancelled Katamari Damacy Online. She
-comes in two looks.
+Long Lost Cousins lets you play Once Upon a KATAMARI as a cousin the game never shipped. It has four of them. Three
+are cousins from the cancelled Katamari Damacy Online and one is a fan-made cousin:
+
+- Burda, the singer whose head is a sideways microphone (new and old style).
+- Circuit, a hooded figure with two pink-tipped horns, a shield-shaped face window and a green trace on their robe (new
+  and old style).
+- Pis, a magenta jigsaw-puzzle piece with a blue stepped bottom and their face on the top tab (new style).
+- Pew, the fan-made "cousin with a gun" from 2017, whose head is a grey pistol with the face on the muzzle end (new
+  style).
 
 ## What does it do?
 
-It dresses your own cousin as Burda. The game's body and face on your cousin are switched off, and Burda's body and
-face, built from the mod's own files, take their place. She wears your cousin's presents. In the new style she moves
-with the Prince's motions; in the old style with Katamari Forever's, read from your own copy of that game (see below).
-Her face changes when your cousin's would, blinks included.
+It dresses your own cousin as the one you pick. The game's body and face on your cousin are switched off, and the
+picked cousin's body and face, built from the mod's own files, take their place. They wear your cousin's presents. In
+the new style they move with the Prince's motions; in the old style with Katamari Forever's, read from your own copy of
+that game (see below). Their face changes when your cousin's would, blinks included.
 
-Nothing new goes into your save and nothing is sent over the network. When you pick Burda, the save keeps your own
-cousin. Under her the game builds the Prince, whoever your own cousin is, so she always stands on the same body.
+Nothing new goes into your save and nothing is sent over the network. When you pick one of the mod's cousins, the save
+keeps your own cousin. Under them the game builds the Prince, whoever your own cousin is, so they always stand on the
+same body.
 
-## How do I pick Burda?
+## How do I pick one?
 
-On the game's own select screen, The Prince & Cousins (on the Prince's Ship, in the Plaza and on OujiStar). She is on
-page 4, in the first free slot after the last cousin, and she is found from the start. Pick her and confirm, and you
-are Burda. Your save keeps the cousin you were. Pick any cousin there, your own one included, and she is off again.
+On the game's own select screen, The Prince & Cousins (on the Prince's Ship, in the Plaza and on OujiStar). They are on
+page 4, in the first free slots after the last cousin: Burda in slot 14, Circuit in slot 15, Pew in slot 16 and Pis in
+slot 17. All are found from the start. Pick one and confirm, and you are that cousin. Your save keeps the cousin you
+were. Pick another of the mod's cousins and you switch; pick any of the game's cousins there, your own one included,
+and the mod's cousin is off again.
 
-You can also pick her in the Long Lost Cousins tab of the mod window. There are three choices:
+You can also pick them in the Long Lost Cousins tab of the mod window. The choices are:
 
 - Off, the game's own cousin. This is the default.
-- Burda, new style (OUAK): made like this game's cousins, with a face piece for each of the game's 23 face slots and
-  her own singing eyes when your cousin whistles.
-- Burda, old style (Katamari Forever): the look of the older games, with 11 drawn face cards.
+- Each cousin in the new style (OUAK): made like this game's cousins, with a face piece for each of the game's 23 face
+  slots and their own eyes when your cousin whistles (Burda's singing eyes, Circuit's humming ones, Pew's aiming ones;
+  Pis whistles as the Prince does).
+- Burda and Circuit in the old style (Katamari Forever): the look of the older games, with 11 drawn face cards.
 
-The tab also picks her style. Picked on the select screen, she comes in the style last picked in the tab (the new
-style if none was), and her slot shows that style's picture the next time the screen opens.
+The tab also picks the style. Picked on the select screen, a cousin comes in the style last picked in the tab (the new
+style if none was), and each slot shows that style's picture the next time the screen opens.
 
-Both ways do the same: the mod notes which cousin your save holds when you pick her, and she is worn while the save
-still holds that cousin. She comes off by herself when the saved cousin changes: another cousin picked on the select
-screen, a swap with a cousin in the Plaza, the Cousin Creator, or another save slot loaded. Your own cousin is back
-then, and you can pick her again.
+Both ways do the same: the mod notes which cousin your save holds when you pick one, and the mod's cousin is worn while
+the save still holds that cousin. It comes off by itself when the saved cousin changes: another of the game's cousins
+picked on the select screen, a swap with a cousin in the Plaza, the Cousin Creator, or another save slot loaded. Your
+own cousin is back then, and you can pick again.
 
 The change shows the next time the game builds your cousin. On the Prince's Ship the game does that right after you
 confirm on the select screen; elsewhere it is the next stage or the next visit to the Plaza or the ship. Your choice is
@@ -41,8 +51,9 @@ kept in `UserData/LongLostCousins/settings.json`, never in the game's save.
 
 ## Where is my cousin dressed?
 
-- In story stages played alone, and in the copy of your cousin the stage screen shows in its corner. There she is
+- In story stages played alone, and in the copy of your cousin the stage screen shows in its corner. There Burda is
   drawn a little smaller in the new style (0.966), a rough value meant to make her as wide as the Prince would be.
+  The others are drawn at 1, not yet measured.
 - In the Plaza and on the Prince's Ship, and in the copy of your cousin their screens show.
 - On both stage results screens, in the ending, on the star map (OujiStar), in Cosmo, in the tutorial Plaza, in the mini
   theme and in the present collection popup. In each of them the mod has the game build the Prince for you and dresses
@@ -50,35 +61,46 @@ kept in `UserData/LongLostCousins/settings.json`, never in the game's save.
   it can't get past the "Are you finished?" question to the results.
 
 One of the two results screens (its code calls it AA) shows a copy of the stage's model, which is already the Prince
-under her. That screen also picks its camera by the saved cousin (cousins 73 and 74 get their own), and the mod has it
-pick the Prince's camera.
+under the mod's cousin. That screen also picks its camera by the saved cousin (cousins 73 and 74 get their own), and the
+mod has it pick the Prince's camera.
 
-Wherever the game builds a cousin other than the Prince for you, she is left off rather than put on the wrong body.
+Wherever the game builds a cousin other than the Prince for you, the mod's cousin is left off rather than put on the
+wrong body.
 
 ## Where is it not dressed?
 
-On the select screen itself (it shows a flat picture per cousin, and hers is the mod's own), in online battles, in OUAK
-Multiplayer and in the Cousin Creator. In OUAK Multiplayer the other players see the game's own cousin, and so do the
-ghosts and portraits there. The one stage where the game always plays the Prince stays the Prince.
+On the select screen itself (it shows a flat picture per cousin, and the mod's cousins have the mod's own), in online
+battles, in OUAK Multiplayer and in the Cousin Creator. In OUAK Multiplayer the other players see the game's own cousin,
+and so do the ghosts and portraits there. The one stage where the game always plays the Prince stays the Prince.
 
-## Does she wear my presents?
+## Do they wear my presents?
 
-Yes, the hats, faces and other solid presents your cousin wears. Each one hangs on her own joint of the same name (a hat
-on her head), so it moves with her and shows wherever she is shown, on the stage screen's copy and the Plaza's too.
-A present you put on while she is worn goes straight onto her. None of this has been seen working in the game yet; the
-in-game test checks it on the ship and in the stage.
+Yes, the hats, faces and other solid presents your cousin wears. Each one hangs on the cousin's own joint of the same
+name (a hat on the head), so it moves with them and shows wherever they are shown, on the stage screen's copy and the
+Plaza's too. A present you put on while one is worn goes straight onto them. The in-game test checks this on the ship
+and in the stage; on the results screens and the others listed above it has not been seen.
 
-In the new style she is built on the Prince's joints, so a present sits where it would sit on the Prince. In the old
-style her head is taller and reaches further forward, so presents on the head are moved 7.015 cm up and 3.547 cm
-forward. That value was worked out from her model (the top and front of her head against the Prince's) and has not
-been checked in the game yet.
+Burda's new style is built on the Prince's joints with a head of his size, so a present sits where it would sit on the
+Prince. In her old style her head is taller and reaches further forward, so presents on the head are moved 7.015 cm up
+and 3.547 cm forward.
 
-The body suits are not shown on her. They are bent around the Prince's own body and would not fit hers, so they stay
-hidden. When a hat hides the Prince's antenna, hers is hidden too (new style; the old style has no separate antenna).
+Circuit's hood is much taller than the Prince's head, so head presents go to its top: 17.41 cm up and 0.698 cm forward
+in the new style, 15.721 cm up and 2.103 cm back in the old. Face presents (glasses, masks) take that back again and sit
+5 cm lower than on the Prince, over Circuit's eyes in the face window. In the new style Circuit's horns are their
+antenna, so a hat that hides the Prince's antenna hides the horns too. In the old style the horns are part of the hood
+and always show.
 
-The numbers are in `Cousins/cousins.json`, under "fit", for each style: an offset per joint, an offset for a present
-that needs its own, a list of presents she never wears, and her scale in the stage screen's corner. They are her own
-numbers, not taken from the game.
+Pew and Pis have no offsets yet: a present hangs on their joint of the same name, wherever that joint is on their
+body. Pew's head joint sits over the pistol's grip, so a hat sits there, not at the muzzle with the face.
+
+These values were worked out from the models (the top and front of the head against the Prince's) and have not been
+measured in the game. The body suits are not shown on either cousin. They are bent around the Prince's own body and
+would not fit, so they stay hidden. When a hat hides the Prince's antenna, the cousin's is hidden too (neither old style
+has a separate antenna).
+
+The numbers are in `Cousins/cousins.json`, under "fit", for each cousin and style: an offset per joint, an offset for
+each kind of present (body, face or head), an offset for a present that needs its own, a list of presents the cousin
+never wears, and their scale in the stage screen's corner. They are the mod's own numbers, not taken from the game.
 
 ## How does the old style move?
 
@@ -89,21 +111,22 @@ the disc folder itself (the one holding `PS3_GAME`), `PS3_GAME`, or `PS3_GAME/US
 
 At each start the mod reads four files from that copy: the motion table, the Prince's model and his two motion packs,
 about 0.6 MB of Forever's archive. It checks each one against the copy the mod was made for, then fits the Prince's
-motions to Burda's body in memory, away from the game's main thread, in under a second. Nothing of Forever is stored or
-sent anywhere. The mod itself carries only which Forever motion plays for each of this game's motions, which Forever
-joint moves each of hers, the scale between the two games, and the four checksums.
+motions to the old-style body in memory, away from the game's main thread, in under a second. Both cousins' old styles
+share one rig, so the motions are fitted once. Nothing of Forever is stored or sent anywhere. The mod itself carries
+only which Forever motion plays for each of this game's motions, which Forever joint moves each of the cousin's joints,
+the scale between the two games, and the four checksums.
 
-While you play, she takes the Forever motion that matches what your cousin is doing (46 of this game's motions have
-one), at Forever's own pace. Her face card follows that motion's expression, unless the game shows a face of its own
-at that moment (an override face, no face, the whistle); then the game's face wins. Where Forever has no matching motion
-(the cars, some emotes, the select screen and a few more), she plays this game's motion, with her waist 7.415 cm
-higher than the Prince's so her legs reach the ground.
+While you play, the cousin takes the Forever motion that matches what your cousin is doing (46 of this game's motions
+have one), at Forever's own pace. Their face card follows that motion's expression, unless the game shows a face of its
+own at that moment (an override face, no face, the whistle); then the game's face wins. Where Forever has no matching
+motion (the cars, some emotes, the select screen and a few more), they play this game's motion, with the waist 7.415 cm
+higher than the Prince's so the legs reach the ground.
 
 ### What happens without a copy?
 
-She plays this game's motions everywhere, as described above, and the tab says why in one line: no folder set, no
-Katamari Forever found in it, or files that are not the copy the mod knows. Only the North American disc has been
-tried. Other regions may differ from it, and then they count as the wrong files.
+The old style plays this game's motions everywhere, as described above, and the tab says why in one line: no folder
+set, no Katamari Forever found in it, or files that are not the copy the mod knows. Only the North American disc has
+been tried. Other regions may differ from it, and then they count as the wrong files.
 
 ### Where is the folder kept?
 
@@ -113,35 +136,36 @@ the copy again without a restart.
 
 ## Does it do anything while it is off?
 
-It adds her slot to the select screen. Seven hooks are always in place, because that screen is where she is picked:
-the screen's slot setup, its confirm, the two places in the Cousin Creator's selection that store a cousin straight
-into the save, and one check on every save the game writes, which makes sure the mod's id never reaches the file. They
+It adds the cousins' slots to the select screen. Seven hooks are always in place, because that screen is where they are
+picked: the screen's slot setup, its confirm, the two places in the Cousin Creator's selection that store a cousin
+straight into the save, and one check on every save the game writes, which makes sure no mod id reaches the file. They
 act only on those calls and do no work of their own each frame.
 
-Four more hooks exist only while the settings name her. One of them sits on the game's "which cousin is saved"
-question, which about 62 places in the game ask, so it is removed as soon as the settings stop naming her. It answers
+Four more hooks exist only while the settings name a cousin. One of them sits on the game's "which cousin is saved"
+question, which about 62 places in the game ask, so it is removed as soon as the settings name none. It answers
 differently only inside short stretches the mod marks: the select screen's update, where it puts the current-cousin
-marker on her slot, and the game's loading of your own model, where it says "the Prince". The other three mark the
-select screen's stretches.
+marker on the worn cousin's slot, and the game's loading of your own model, where it says "the Prince". The other three
+mark the select screen's stretches.
 
-Thirteen hooks build the Prince under her and keep the save safe while they do. They exist while the settings name
-her, or while a model dressed as her is still around: the two loaders of your cousin on the ship and in the Plaza, the
-stage's and the ending's loading, the star map's two loading steps, Cosmo's, the mini theme's, the present collection
-popup's, the AA results screen's camera choice, the save's conversion to bytes, and the Plaza swap (two hooks: the
-model that walks off as a cousin is undressed first, and she comes off). The hooks that dress your cousin, and the
-work each frame, exist only while she is worn.
+Thirteen hooks build the Prince under the cousin and keep the save safe while they do. They exist while the settings
+name a cousin, or while a model dressed as one is still around: the two loaders of your cousin on the ship and in the
+Plaza, the stage's and the ending's loading, the star map's two loading steps, Cosmo's, the mini theme's, the present
+collection popup's, the AA results screen's camera choice, the save's conversion to bytes, and the Plaza swap (two
+hooks: the model that walks off as a cousin is undressed first, and the mod's cousin comes off). The hooks that dress
+your cousin, and the work each frame, exist only while one is worn.
 
-## Why does the select screen never store her in the save?
+## Why does the select screen never store them in the save?
 
-Because the save keeps your own cousin. The game's save only knows its own cousins, and about 62 places in the game
-read the saved cousin. Her slot carries the mod's own id, 100. When you confirm her, the mod turns that slot into the
-cousin your save already holds (for a Cousin Creator cousin, the same designed cousin too) just before the game stores
-it, and puts 100 back right after. So the game stores what it had, and the save stays as it was.
+Because the save keeps your own cousin. The game's save only knows its own cousins, and about 62 places in the game read
+the saved cousin. Each of the mod's slots carries the mod's own id: 100 for Burda, 101 for Circuit, 102 for Pew and 103
+for Pis (the mod keeps 100 to 199 for its cousins). When you confirm one, the mod turns that slot into the cousin your
+save already holds (for a Cousin Creator cousin, the same designed cousin too) just before the game stores it, and puts
+the mod's id back right after. So the game stores what it had, and the save stays as it was.
 
-Her slot is never filled on the Cousin Creator's selection screen, whose own code stores a slot's id straight into the
-save. If 100 ever reached the save anyway, the mod puts back the cousin it noted when you picked her before the game
-writes the file (the log then shows an error). While she is worn, the screen shows the current-cousin marker on her
-slot and lets you pick your own cousin again, which turns her off.
+The mod's slots are never filled on the Cousin Creator's selection screen, whose own code stores a slot's id straight
+into the save. If a mod id ever reached the save anyway, the mod puts back the cousin it noted when you picked one
+before the game writes the file (the log then shows an error). While one is worn, the screen shows the current-cousin
+marker on that cousin's slot and lets you pick your own cousin again, which turns it off.
 
 ## What does it need?
 
@@ -157,17 +181,21 @@ the words in it and deletes it:
 - `slot N`: the save slot to load (the last one used when not given).
 - `stage`: also play As Large As Possible 1.
 - `results`: also finish that stage and check the results (this includes `stage`).
-- `select`: start with Burda not picked, and pick her on the game's select screen on the ship (see below).
+- `as <id>`: the cousin to test, by its id in `Cousins/cousins.json` (`burda`, `circuit`, `pew` or `pis`; `burda` when
+  not given).
+  The test lines call the tested cousin "her" whichever one it is.
+- `select`: start with nobody picked, and pick the cousin on the game's select screen on the ship (see below).
+- `switch`: with `select`, also pick another of the mod's cousins on the screen while the first is worn (see below).
 - `probe`: also run the probes for the next version and log what they find (see below). Use it with `stage`.
 - `cousin N`: the cousin the save holds for the run (6 when not given).
 - `creator`: the save holds a Cousin Creator cousin for the run, with the custom index the slot already has.
 - `forever`: use the Katamari Forever folder already in `settings.json` and check the old style's Forever motions (see
   below). Without it the test treats the folder as unset, so the old style plays this game's motions as before.
 
-The test turns Burda on for that game session only and never writes `settings.json`. It makes a backup of the saves,
-blocks every save write for the whole session, and loads the slot the way the title's continue does. Right after the
-slot is read, it sets the saved cousin and the game's current-cousin id to the test's cousin, in memory only, so that
-building the Prince under her is a real change. Before the last line it puts both back and checks that the saved
+The test turns the cousin on for that game session only and never writes `settings.json`. It makes a backup of the
+saves, blocks every save write for the whole session, and loads the slot the way the title's continue does. Right after
+the slot is read, it sets the saved cousin and the game's current-cousin id to the test's cousin, in memory only, so
+that building the Prince under her is a real change. Before the last line it puts both back and checks that the saved
 cousin, its custom index, the current-cousin id and the worn presents are as the slot had them.
 
 On the Prince's Ship it checks that the settings noted the saved cousin and that the walking cousin and its screen copy
@@ -199,17 +227,23 @@ second camera draws, which no panel shows).
 
 With `select`, nobody is picked at the start. On the ship the test opens The Prince & Cousins through the game's own
 calls: once the ship would take up an open menu, the pause menu, then its Mates entry. It logs every child of her slot
-and of Young King's slot on the same page, then checks her slot on page 4: the id 100, her icon drawn (shown, her
-sprite and texture, at a found slot's size, opaque), the found look, her name and no New mark. It takes a picture
-there and confirms her the way the menu and the dialog's yes do, inside the menu's scope: the "already selected"
-compare, then the confirm. It checks that the save and the game's current cousin still hold the test's cousin, that
-the settings say Burda and noted that cousin, that the dressing hooks and the marker hooks are in, that the scope is
-closed again and that the save check never fired. Then it waits for the ship to rebuild your cousin and runs the ship
-checks above on it. Last it opens the screen again, checks that the current-cousin marker sits on her slot and not on
-the test cousin's, and that the scope reads the saved cousin as her. It picks the test cousin's own slot and checks
-that she is off, that the save is unchanged, that the marker hooks are gone and that the rebuilt cousin is the test's
-cousin itself. When that cousin has no found slot on the screen (a Cousin Creator cousin, or one the save has not
-found), it picks the Prince instead and says so; the save then holds the Prince and is not compared.
+and of Young King's slot on the same page, then checks her slot on page 4: her mod id (100 to 103), her icon drawn
+(shown, her sprite and texture, at a found slot's size, opaque), the found look, her name and no New mark. It takes a
+picture there and confirms her the way the menu and the dialog's yes do, inside the menu's scope: the "already selected"
+compare, then the confirm. It checks that the save and the game's current cousin still hold the test's cousin, that the
+settings name her and noted that cousin, that the dressing hooks and the marker hooks are in, that the scope is closed
+again and that the save check never fired. Then it waits for the ship to rebuild your cousin and runs the ship checks
+above on it. Last it opens the screen again, checks that the current-cousin marker sits on her slot and not on the test
+cousin's, and that the scope reads the saved cousin as her. It picks the test cousin's own slot and checks that she is
+off, that the save is unchanged, that the marker hooks are gone and that the rebuilt cousin is the test's cousin itself.
+When that cousin has no found slot on the screen (a Cousin Creator cousin, or one the save has not found), it picks the
+Prince instead and says so; the save then holds the Prince and is not compared.
+
+With `switch` too, after the marker check and before picking the test cousin's slot, the test picks the first other of
+the mod's cousins on the same screen while the first is worn. It checks that the save is unchanged, that the settings
+name the other cousin with the same noted cousin, that both slots carry their mod ids again, that the hooks stay in, and
+that the ship rebuilds your cousin dressed as the other one, marker included. Then it opens the screen once more and
+goes on as above.
 
 When the ship does not take a step by itself (taking up the open menu, opening the screen, starting the cousin change
 after a confirm, or resetting the screen before it opens again), the test logs the state and makes that step with the
@@ -223,6 +257,11 @@ Quit Game, seen in every picture), and the ship's menu handler's update flag sta
 With the checks above, on 2026-11-20, `select` gave pass=127 fail=4 in the new style and pass=126 fail=4 in the old
 style with Forever motions. The new-style run was repeated on the final build with the same result. The four FAILs
 were the menu waits each time.
+
+A `select switch` run opens the menu three times, so it ends with six such FAIL lines. On 2026-11-26, with Circuit's
+rebuilt models, `select switch as circuit` gave pass=147 fail=6 in the new style and in the old style with Forever
+motions, every switch check passing; `as circuit stage` gave pass=204 fail=0 in the new style and pass=237 fail=0 in
+the old style with Forever motions.
 
 ### What does the forever word check?
 
@@ -263,11 +302,12 @@ The probe's start is after the test set the saved cousin, so it compares with th
 Every check is logged as a `[CousinTest] PASS` or `[CousinTest] FAIL` line, the last line is
 `[CousinTest] DONE pass=N fail=M`, pictures go to `UserData/LongLostCousins/TestShots`, and the game quits at the end.
 
-## Where do her models come from?
+## Where do the models come from?
 
-They are the mod's own work. Each look is one `.llcm` file in `Cousins/Burda` (the format is in `Cousins/FORMAT.md`),
-made from the Blender files by `Tools/export_llcm.py` and read back and checked by `Tools/check_llcm.py`. They hold no
-game data. `Cousins/cousins.json` lists the cousins and their looks, so the next cousin is data, not code.
+They are the mod's own work. Each look is one `.llcm` file in the cousin's folder under `Cousins/` (the format is in
+`Cousins/FORMAT.md`), made from the Blender files by `Tools/export_llcm.py` and read back and checked by
+`Tools/check_llcm.py`. They hold no game data. `Cousins/cousins.json` lists the cousins and their looks, so the next
+cousin is data, not code.
 
 ## How do I know the mod only calls what the game has?
 

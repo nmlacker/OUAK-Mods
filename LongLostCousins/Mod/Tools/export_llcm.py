@@ -59,6 +59,35 @@ def read_json(path):
         return json.load(f)
 
 
+def read_face_map(path, load=None):
+    """A cousin's face_map.json with its cousin-named keys (<id>_old_cards, <id>_new_pieces) also under the plain names
+    old_cards and new_pieces, and each list its 'shared' block points to (forever_expressions, old_style_rows) read from
+    that other face map, its cards matched by card number: card k here stands where the other cousin's card k stands."""
+    if load is None:
+        load = read_json
+    fm = load(path)
+    for plain in ('old_cards', 'new_pieces'):
+        keys = [k for k in fm if k.endswith('_' + plain)]
+        if len(keys) != 1:
+            fail('%s: expected one *_%s key, found %s' % (path, plain, keys))
+        fm[plain] = fm[keys[0]]
+    for key, src in (fm.get('shared') or {}).items():
+        if key == 'note':
+            continue
+        if key in fm:
+            fail('%s: %s is both its own and shared' % (path, key))
+        other = read_face_map(os.path.join(LLC, src), load)
+        number = {name: k for k, name in other['old_cards'].items()}
+        out = []
+        for e in other[key]:
+            k = number.get(e['card'])
+            if k is None or k not in fm['old_cards']:
+                fail('%s: shared %s names card %s, which has no number here' % (path, key, e['card']))
+            out.append(dict(e, card=fm['old_cards'][k]))
+        fm[key] = out
+    return fm
+
+
 class Strings:
     """The STRS table: each string once, index by first use."""
 
@@ -275,7 +304,7 @@ def read_mesh(o, rig, A_inv, jindex):
 
 
 def face_payload(S, fm, slot_names, mesh_index, has_slots, has_cards):
-    card_no = {name: int(k) for k, name in fm['burda_old_cards'].items()}
+    card_no = {name: int(k) for k, name in fm['old_cards'].items()}
     blink = fm['blink']['ouak']
     out = bytearray(struct.pack('<B', len(slot_names)))
     for s in slot_names:
@@ -340,7 +369,7 @@ def face_payload(S, fm, slot_names, mesh_index, has_slots, has_cards):
 def export(entry, style):
     build = entry['build']
     blend = os.path.normpath(os.path.join(LLC, build['blend'][style]))
-    fm = read_json(os.path.join(LLC, build['face_map']))
+    fm = read_face_map(os.path.join(LLC, build['face_map']))
     spec = read_json(os.path.join(LLC, build['rig_spec']))[build['rig_spec_block'][style]]['joints']
     out_path = os.path.normpath(os.path.join(COUSINS, entry['styles'][style]))
     hash_before = sha256(blend)
@@ -354,8 +383,8 @@ def export(entry, style):
     joints, jindex = read_joints(rig, spec)
 
     slot_names = [s['slot'] for s in fm['ouak_slots']]
-    extra_names = [n for n in fm['burda_new_pieces'] if not (n.endswith('_m') and n[:-2] in slot_names)]
-    card_no = {name: int(k) for k, name in fm['burda_old_cards'].items()}
+    extra_names = [n for n in fm['new_pieces'] if not (n.endswith('_m') and n[:-2] in slot_names)]
+    card_no = {name: int(k) for k, name in fm['old_cards'].items()}
 
     meshes = []
     for o in bpy.data.objects:

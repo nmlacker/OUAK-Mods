@@ -15,10 +15,12 @@ namespace LongLostCousins.Test
 {
     /// <summary>
     /// Test only: <c>UserData/LongLostCousins/cousintest.flag</c> runs the in-game check once, then quits the game.
-    /// The flag turns Burda on for this session only (settings.json is never written) and is deleted when read.
+    /// The flag turns the test's cousin (Burda, or <c>as circuit</c> and the like: a cousin id of cousins.json) on for
+    /// this session only (settings.json is never written) and is deleted when read.
     /// Words in the flag: <c>style new</c> or <c>style old</c> (new by default), <c>slot N</c> (the last used slot by
     /// default), <c>stage</c> (also test a story stage), <c>results</c> (also end the stage and test the results),
-    /// <c>select</c> (start with Burda not chosen and pick her on the game's select screen on the ship, then the test's
+    /// <c>switch</c> (with select: also pick the next cousin of cousins.json on the screen while she is worn, before
+    /// turning her off), <c>select</c> (start with the cousin not chosen and pick her on the game's select screen on the ship, then the test's
     /// cousin's own slot), <c>probe</c> (also run slice three's in-game probes and log them on [CousinProbe] lines:
     /// CousinTest.Probe.cs), <c>cousin N</c> (the cousin the save holds for the run, 6 by default), <c>creator</c> (the
     /// save holds the Cousin Creator's 999 with the custom index it already has), <c>forever</c> (use the Katamari
@@ -34,14 +36,19 @@ namespace LongLostCousins.Test
     {
         private static readonly ModLog Log = LongLostCousinsMod.Log.In("Test");
         private static string Shots => Path.Combine(Settings.Folder, "TestShots");
-        private const string Cousin = "burda";
+        // The cousin under test (word "as <id>", Burda by default) and its select-screen slot.
+        private static string Cousin = "burda";
+        private static CousinEntry Her => Catalog.Find(Cousin);
+        private static int HerPage => Her?.ScreenWindow ?? -1;
+        private static int HerSlot => Her?.ScreenSlot ?? -1;
+        private static int HerId => Her?.ScreenId ?? -1;
         // The design's groups, and 10: the first group with the cheek (a multiply-blended overlay) for its picture.
         private static readonly int[] FaceGroups = { 0, 9, 10, 12, 15, 17, 26 };
 
         private static bool _running;
         private static string _style = "new";
         private static int _slot = -1;
-        private static bool _stage, _results, _select;
+        private static bool _stage, _results, _select, _switch;
         private static int _pass, _fail;
         // The save's cousin for the run (word "cousin N" or "creator"), and the fields as the slot had them.
         private static int _testCousin = 6, _testCustom = int.MinValue;
@@ -77,7 +84,7 @@ namespace LongLostCousins.Test
             Msg($"{(ok ? "PASS" : "FAIL")} {what}{(string.IsNullOrEmpty(detail) ? "" : ": " + detail)}");
         }
 
-        /// <summary>Reads and deletes the flag. True when the test is armed (Burda is then on in memory).</summary>
+        /// <summary>Reads and deletes the flag. True when the test is armed (the cousin is then on in memory).</summary>
         public static bool CheckFlag()
         {
             string flag = Path.Combine(Settings.Folder, "cousintest.flag");
@@ -93,11 +100,14 @@ namespace LongLostCousins.Test
             _results = w.Contains("results");
             _stage = _results || w.Contains("stage");
             _select = w.Contains("select");
+            _switch = _select && w.Contains("switch");
             _probe = w.Contains("probe");
             _forever = w.Contains("forever");
             i = w.IndexOf("cousin");
             if (i >= 0 && i + 1 < w.Count && int.TryParse(w[i + 1], out int tc) && Chosen.IsStorableId(tc)) _testCousin = tc;
             if (w.Contains("creator")) _testCousin = Chosen.CreatorId;
+            i = w.IndexOf("as");
+            if (i >= 0 && i + 1 < w.Count) Cousin = w[i + 1];
             _running = true;
             _script = Script().GetEnumerator();
 
@@ -758,34 +768,34 @@ namespace LongLostCousins.Test
             SelectionMenuController menu = null;
             foreach (var x in OpenMenu(m => menu = m)) yield return x;
             if (menu == null) yield break;
-            var slot = SelectScreen.SlotOf(menu);
+            var slot = SelectScreen.SlotOf(menu, Her);
             var wins = menu._iconWindowControllers;
-            LogSlotTree("her slot (page 4, slot 14)", slot);
-            LogSlotTree("Young King's slot (page 4, slot 7)", Slot(menu, SelectScreen.Page, 6));
+            LogSlotTree($"her slot (page {HerPage + 1}, slot {HerSlot + 1})", slot);
+            LogSlotTree("Young King's slot (page 4, slot 7)", Slot(menu, HerPage, 6));
             CheckSlot(menu, slot);
 
-            Msg($"to page 4, slot 14 (ChangePage to {SelectScreen.Page}, cursor {SelectScreen.Slot})");
-            FocusSlot(menu, SelectScreen.Page, SelectScreen.Slot);
+            Msg($"to page {HerPage + 1}, slot {HerSlot + 1} (ChangePage to {HerPage}, cursor {HerSlot})");
+            FocusSlot(menu, HerPage, HerSlot);
             yield return 1.5f;
             var focused = SelectScreen.Focused(menu);
             Check("select: the cursor is on her slot", focused != null && slot != null && focused.Pointer == slot.Pointer,
-                  $"page {menu._pageIndex}, cursor {wins[SelectScreen.Page]._cursorIndex}, focused id {(focused != null ? (int)focused._ITOKONAME : -2)}");
+                  $"page {menu._pageIndex}, cursor {wins[HerPage]._cursorIndex}, focused id {(focused != null ? (int)focused._ITOKONAME : -2)}");
             Shot("select_page4_" + _style);
             yield return PictureTaken();
 
             // ---- confirm her, as the dialog's yes does
             IntPtr before = WalkerPtr();
-            if (!Confirm(menu, SelectScreen.Page, SelectScreen.Slot, SelectScreen.ModId, "Burda")) yield break;
+            if (!Confirm(menu, HerPage, HerSlot, HerId, Her?.Name)) yield break;
             CheckSaveKept("after confirming her");
             Check("select: the settings record the save's cousin", Settings.HasRecord && Settings.Saved == _testCousin && Settings.Custom == _testCustom,
                   $"recorded {Settings.DescribeRecord()} (custom index {Settings.Custom}); GetSelectPlayerId {Chosen.SavedCousin()}, confirm write-backs {SelectScreen.WriteBacks}");
-            Check("select: the settings say Burda, picked on the screen", Settings.Active && Settings.CousinId == Cousin && Settings.OnScreen && Settings.Style == _style,
+            Check($"select: the settings say {Her?.Name}, picked on the screen", Settings.Active && Settings.CousinId == Cousin && Settings.OnScreen && Settings.Style == _style,
                   $"{Settings.Describe()}, on the screen {Settings.OnScreen}");
             Msg($"settings kept in memory only (set up by the test): {Settings.MemoryOnly}");
             Check("select: she is worn and the dressing hooks are in place", Chosen.On && Hooks.Installed && Hooks.Count == Hooks.Expected,
                   $"worn {Chosen.On}, {Hooks.Count} of {Hooks.Expected} hooks");
-            Check("select: her slot carries 100 again", slot != null && (int)slot._ITOKONAME == SelectScreen.ModId, slot != null ? "id " + (int)slot._ITOKONAME : "no slot");
-            CheckAfterConfirm("the confirm of Burda", _testCousin);
+            Check($"select: her slot carries {HerId} again", slot != null && (int)slot._ITOKONAME == HerId, slot != null ? "id " + (int)slot._ITOKONAME : "no slot");
+            CheckAfterConfirm("the confirm of " + Her?.Name, _testCousin);
             yield return 0.2f;   // a LateUpdate: the marker hooks follow the settings there
             Check("select: the marker hooks come in once the settings name her", SelectScreen.ScopeInstalled,
                   SelectScreen.ScopeInstalled ? "in" : SelectScreen.ScopeFailed ? "they could not be made (see the log)" : "not in");
@@ -805,22 +815,22 @@ namespace LongLostCousins.Test
             foreach (var x in OpenMenu(m => menu = m)) yield return x;
             if (menu == null) yield break;
             wins = menu._iconWindowControllers;
-            slot = SelectScreen.SlotOf(menu);
+            slot = SelectScreen.SlotOf(menu, Her);
             if (_reopened)
             {
                 // The game did not close and reset the screen, so its markers are the ones from before the confirm. The
                 // screen places them in IconWindowController.SetIcon when it opens; called here directly for the two pages.
                 Msg("[direct] refreshing the current-cousin markers: IconWindowController.SetIcon on pages 1 and 4 (the screen was not reset by the game)");
                 wins[0].SetIcon();
-                wins[SelectScreen.Page].SetIcon();
+                wins[HerPage].SetIcon();
             }
             bool found = FindSlot(menu, _testCousin, out int ownPage, out int ownIndex);
-            if (_reopened && found && ownPage != 0 && ownPage != SelectScreen.Page)
+            if (_reopened && found && ownPage != 0 && ownPage != HerPage)
             {
                 Msg($"[direct] refreshing the current-cousin markers: IconWindowController.SetIcon on page {ownPage + 1} too");
                 wins[ownPage].SetIcon();
             }
-            bool marked = Marked(menu, SelectScreen.Page, SelectScreen.Slot);
+            bool marked = Marked(menu, HerPage, HerSlot);
             bool ownMarked = found && Marked(menu, ownPage, ownIndex);
             Check($"select: the current-cousin marker sits on her slot, not on {Chosen.Describe(_testCousin, _testCustom)}'s", marked && !ownMarked,
                   $"hers {marked}, the save's cousin's {(found ? ownMarked.ToString() : "(no slot on the screen)")}, marker hooks {SelectScreen.ScopeInstalled}, screen reset by the game {!_reopened}");
@@ -836,8 +846,63 @@ namespace LongLostCousins.Test
                 using (SelectScreen.Suspended()) suspended = save != null ? save.GetSelectPlayerId : -1;
             }
             finally { SelectScreen.LeaveScope(null); }
-            Check("select: inside the menu's scope the save's cousin reads as her id, and as itself when suspended", inScope == SelectScreen.ModId && suspended == _testCousin,
+            Check("select: inside the menu's scope the save's cousin reads as her id, and as itself when suspended", inScope == HerId && suspended == _testCousin,
                   $"in the scope {inScope}, suspended {suspended}, depth after {SelectScreen.ScopeDepth}");
+
+            // ---- another of the mod's cousins picked while she is worn (word "switch"): the settings follow, the record,
+            // the save and the slot ids stay, and the rebuilt walking cousin wears the other one.
+            if (_switch)
+            {
+                var other = Catalog.Cousins.FirstOrDefault(c => c.Id != Cousin);
+                Check("select: switch: cousins.json has a second cousin", other != null, other != null ? other.Name : "only " + Cousin);
+                if (other == null) yield break;
+                before = WalkerPtr();
+                Msg($"to page {other.ScreenWindow + 1}, slot {other.ScreenSlot + 1} ({other.Name})");
+                FocusSlot(menu, other.ScreenWindow, other.ScreenSlot);
+                yield return 1f;
+                if (!Confirm(menu, other.ScreenWindow, other.ScreenSlot, other.ScreenId, other.Name)) yield break;
+                CheckSaveKept("after switching to " + other.Name);
+                Check($"select: switch: the settings say {other.Name}, picked on the screen, with the same record",
+                      Settings.Active && Settings.CousinId == other.Id && Settings.OnScreen && Settings.HasRecord && Settings.Saved == _testCousin && Settings.Custom == _testCustom,
+                      $"{Settings.Describe()}, on the screen {Settings.OnScreen}, recorded {Settings.DescribeRecord()}");
+                Check("select: switch: worn, with the dressing hooks in place", Chosen.On && Hooks.Installed, $"worn {Chosen.On}, hooks {Hooks.Installed}");
+                var hs = SelectScreen.SlotOf(menu, Her);
+                var os = SelectScreen.SlotOf(menu, other);
+                Check("select: switch: both slots carry their mod ids again", hs != null && (int)hs._ITOKONAME == HerId && os != null && (int)os._ITOKONAME == other.ScreenId,
+                      $"{Her?.Name} {(hs != null ? (int)hs._ITOKONAME : -2)}, {other.Name} {(os != null ? (int)os._ITOKONAME : -2)}");
+                CheckAfterConfirm("the confirm of " + other.Name, _testCousin);
+                yield return 0.2f;
+                Check("select: switch: the marker hooks stay in", SelectScreen.ScopeInstalled);
+                _changeDirect = false;
+                calls0 = PrinceBase.LoaderCalls;
+                rewrites0 = PrinceBase.LoaderRewrites;
+                foreach (var x in AwaitRebuild(before, other.Name)) yield return x;
+                Check("select: switch: the game rebuilt the walking cousin", WalkerPtr() != IntPtr.Zero && WalkerPtr() != before, RebuildHint());
+                CheckLoaderRewrites("select: the rebuild after " + other.Name, _testCousin != 0 ? 1 : 0, calls0, rewrites0);
+                yield return Until(() => Dresser.FindFor(Contexts.PlazaOwnerModel()) != null, 20f, "the walking cousin to be dressed as " + other.Name, false);
+                var dm2 = Dresser.FindFor(Contexts.PlazaOwnerModel());
+                Check($"select: switch: the walking cousin wears {other.Name}", dm2 != null && dm2.Assets.Cousin == other,
+                      dm2 != null ? dm2.Label : Why());
+                if (dm2 != null) CheckModel("ship walking cousin after the switch", dm2, true);
+                Shot("select_switch_" + other.Id + "_" + Settings.Style);
+                yield return PictureTaken();
+
+                // The screen again, for the off confirm below: the marker now sits on the other cousin's slot.
+                menu = null;
+                foreach (var x in OpenMenu(m => menu = m)) yield return x;
+                if (menu == null) yield break;
+                wins = menu._iconWindowControllers;
+                if (_reopened)
+                {
+                    Msg("[direct] refreshing the current-cousin markers: IconWindowController.SetIcon on page 4 (the screen was not reset by the game)");
+                    wins[other.ScreenWindow].SetIcon();
+                    if (found && ownPage != other.ScreenWindow) wins[ownPage].SetIcon();
+                }
+                bool otherMarked = Marked(menu, other.ScreenWindow, other.ScreenSlot), herMarked = Marked(menu, HerPage, HerSlot);
+                Check($"select: switch: the current-cousin marker sits on {other.Name}'s slot only", otherMarked && !herMarked && !(found && Marked(menu, ownPage, ownIndex)),
+                      $"{other.Name} {otherMarked}, {Her?.Name} {herMarked}, screen reset by the game {!_reopened}");
+                before = WalkerPtr();
+            }
 
             // Off: the save's own cousin picked again (the save then still holds it); the Prince when it has no slot here.
             bool ownPickable = found && Slot(menu, ownPage, ownIndex)?._oujiData != null && Slot(menu, ownPage, ownIndex)._oujiData._isReleased;
@@ -902,7 +967,7 @@ namespace LongLostCousins.Test
                 var slots = wins[p] != null ? wins[p]._shortcutIconDatas : null;
                 if (slots == null) continue;
                 for (int i = 0; i < slots.Length; i++)
-                    if (slots[i] != null && (int)slots[i]._ITOKONAME == id && !(p == SelectScreen.Page && i == SelectScreen.Slot)) { page = p; index = i; return true; }
+                    if (slots[i] != null && (int)slots[i]._ITOKONAME == id && !(p == HerPage && i == HerSlot)) { page = p; index = i; return true; }
             }
             return false;
         }
@@ -933,12 +998,12 @@ namespace LongLostCousins.Test
             return w;
         }
 
-        /// <summary>Her slot on the open menu: id 100, the found look with her sprite, her name, no New mark.</summary>
+        /// <summary>Her slot on the open menu: her mod id, the found look with her sprite, her name, no New mark.</summary>
         private static void CheckSlot(SelectionMenuController menu, ShortcutIconData slot)
         {
-            if (slot == null) { Check("select: page 4 has slot 14", false); return; }
-            Check("select: page 4 slot 14 carries the mod's id 100", (int)slot._ITOKONAME == SelectScreen.ModId, "id " + (int)slot._ITOKONAME);
-            var c = SelectScreen.Cousin;
+            if (slot == null) { Check($"select: page {HerPage + 1} has slot {HerSlot + 1}", false); return; }
+            Check($"select: page {HerPage + 1} slot {HerSlot + 1} carries the mod's id {HerId}", (int)slot._ITOKONAME == HerId, "id " + (int)slot._ITOKONAME);
+            var c = Her;
             var want = CousinIcon.Get(c, Settings.StyleFor(c));
             var icon = slot._iconImage;
             bool back = slot._backImage != null && slot._backImage.enabled;
@@ -949,7 +1014,7 @@ namespace LongLostCousins.Test
             bool textured = tex != null && tex.width > 0;
             float alpha = icon != null ? icon.color.a : 0f;
             // Drawn at a found slot's size: Young King's icon on the same page, or the scene's 1024 x 0.2.
-            var king = Slot(menu, SelectScreen.Page, 6);
+            var king = Slot(menu, HerPage, 6);
             float kingWidth = king != null && king._iconImage != null ? DrawnWidth(king._iconImage, king.transform) : 0f;
             float refWidth = kingWidth > 1f ? kingWidth : 204.8f;
             float width = icon != null ? DrawnWidth(icon, slot.transform) : 0f;
@@ -964,9 +1029,9 @@ namespace LongLostCousins.Test
                   $"back {back}, blank {blank}, question mark {hatena}, released {released}");
             string name = slot._oujiData != null ? slot._oujiData._name : null;
             string text = slot._text != null ? slot._text.text : null;
-            Check("select: her name is Burda", name == "Burda" && text == "Burda", $"OujiData name '{name}', text '{text}'");
-            var news = menu._iconWindowControllers[SelectScreen.Page]._newIcon;
-            bool isNew = news != null && SelectScreen.Slot < news.Length && news[SelectScreen.Slot] != null && news[SelectScreen.Slot].activeSelf;
+            Check("select: her name is " + Her?.Name, name == Her?.Name && text == Her?.Name, $"OujiData name '{name}', text '{text}'");
+            var news = menu._iconWindowControllers[HerPage]._newIcon;
+            bool isNew = news != null && HerSlot < news.Length && news[HerSlot] != null && news[HerSlot].activeSelf;
             Check("select: her slot has no New mark", !isNew);
         }
 

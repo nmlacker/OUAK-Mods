@@ -1,0 +1,215 @@
+{
+ "units": "Blender world metres, Z up, -Y forward",
+ "new_style": {
+  "note": "Pew's joints as the .llcm file has them",
+  "joints": {
+   "JNT_root": {
+    "head": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "parent": null,
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_waist": {
+    "head": [
+     0.0,
+     0.0,
+     0.14
+    ],
+    "parent": "JNT_root",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_leg_L": {
+    "head": [
+     0.045,
+     0.0,
+     0.14
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_knee_L": {
+    "head": [
+     0.045,
+     0.0,
+     0.085
+    ],
+    "parent": "JNT_leg_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_ankle_L": {
+    "head": [
+     0.045,
+     0.0,
+     0.03
+    ],
+    "parent": "JNT_knee_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_leg_R": {
+    "head": [
+     -0.045,
+     0.0,
+     0.14
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_knee_R": {
+    "head": [
+     -0.045,
+     0.0,
+     0.085
+    ],
+    "parent": "JNT_leg_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_ankle_R": {
+    "head": [
+     -0.045,
+     0.0,
+     0.03
+    ],
+    "parent": "JNT_knee_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_spine_01": {
+    "head": [
+     0.0,
+     0.0,
+     0.22
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_spine_02": {
+    "head": [
+     0.0,
+     0.0,
+     0.3
+    ],
+    "parent": "JNT_spine_01",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_shoulder_L": {
+    "head": [
+     0.01062,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_spine_02",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_arm_L": {
+    "head": [
+     0.125,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_shoulder_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_elbow_L": {
+    "head": [
+     0.19,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_arm_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_hand_L": {
+    "head": [
+     0.255,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_elbow_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_shoulder_R": {
+    "head": [
+     -0.01063,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_spine_02",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_arm_R": {
+    "head": [
+     -0.125,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_shoulder_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_elbow_R": {
+    "head": [
+     -0.19,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_arm_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_hand_R": {
+    "head": [
+     -0.255,
+     0.0,
+     0.285
+    ],
+    "parent": "JNT_elbow_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_neck": {
+    "head": [
+     0.0,
+     0.0,
+     0.4
+    ],
+    "parent": "JNT_spine_02",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_head": {
+    "head": [
+     0.0,
+     0.0,
+     0.615
+    ],
+    "parent": "JNT_neck",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_mouth": {
+    "head": [
+     0.0,
+     -0.703,
+     0.524
+    ],
+    "parent": "JNT_head",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_nose": {
+    "head": [
+     0.0,
+     -0.703,
+     0.565
+    ],
+    "parent": "JNT_head",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_antenna": {
+    "head": [
+     0.0,
+     -0.59,
+     0.91061
+    ],
+    "parent": "JNT_head",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   }
+  }
+ }
+}

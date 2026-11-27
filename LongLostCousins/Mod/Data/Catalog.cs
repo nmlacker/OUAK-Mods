@@ -27,6 +27,11 @@ namespace LongLostCousins.Data
         public Dictionary<string, ForeverRig> Forever = new(StringComparer.Ordinal);
 
         public ForeverRig ForeverOf(string key) => key != null && Forever.TryGetValue(key, out var r) ? r : null;
+
+        /// <summary>The mod's id for this cousin on the game's select screen (100 to 199, never written to the save).</summary>
+        public int ScreenId;
+        /// <summary>Its slot there: window index (page − 1) and array index (slot − 1). Only page 4's free slots, 14 to 21.</summary>
+        public int ScreenWindow, ScreenSlot;
         public string StylePath(string key) => Styles.FirstOrDefault(s => s.Key == key).Value;
         public string IconPath(string key) => key != null && Icons.TryGetValue(key, out var p) ? p : null;
         public string StyleLabel(string key) => $"{Name}, {(StyleNames.TryGetValue(key, out var s) ? s : key + " style")}";
@@ -43,7 +48,11 @@ namespace LongLostCousins.Data
 
         /// <summary>The game joint a present hangs on (its name) to an offset from her joint of that name.</summary>
         public Dictionary<string, float[]> JointOffsets = new(StringComparer.Ordinal);
-        /// <summary>A present id to an offset added to its joint's, for the few presents that need their own.</summary>
+        /// <summary>A present type (the game's PresentType: BODY 0, FACE 1, HEAD 2) to an offset added to its joint's, for every present of that type.</summary>
+        public Dictionary<int, float[]> TypeOffsets = new();
+        /// <summary>The game's PresentType names, by value: the keys of "type_offsets".</summary>
+        public static readonly string[] TypeNames = { "BODY", "FACE", "HEAD" };
+        /// <summary>A present id to an offset added to its joint's (and its type's), for the few presents that need their own.</summary>
         public Dictionary<int, float[]> PresentOffsets = new();
         /// <summary>Present ids she never shows, whatever they are.</summary>
         public HashSet<int> CannotWear = new();
@@ -53,10 +62,11 @@ namespace LongLostCousins.Data
         /// <summary>Words for the log: where the numbers come from.</summary>
         public string Notes;
 
-        public float[] OffsetFor(string joint, int presentId)
+        public float[] OffsetFor(string joint, int presentId, int presentType)
         {
             var o = new float[3];
             if (joint != null && JointOffsets.TryGetValue(joint, out var j)) { o[0] += j[0]; o[1] += j[1]; o[2] += j[2]; }
+            if (TypeOffsets.TryGetValue(presentType, out var ty)) { o[0] += ty[0]; o[1] += ty[1]; o[2] += ty[2]; }
             if (PresentOffsets.TryGetValue(presentId, out var p)) { o[0] += p[0]; o[1] += p[1]; o[2] += p[2]; }
             return o;
         }
@@ -66,6 +76,13 @@ namespace LongLostCousins.Data
             var f = new StyleFit();
             if (e.TryGetProperty("joint_offsets", out var jo))
                 foreach (var j in jo.EnumerateObject()) f.JointOffsets[j.Name] = Vec(j.Value);
+            if (e.TryGetProperty("type_offsets", out var to))
+                foreach (var p in to.EnumerateObject())
+                {
+                    int type = Array.IndexOf(TypeNames, p.Name);
+                    if (type < 0) throw new InvalidDataException($"type_offsets: '{p.Name}' is not BODY, FACE or HEAD");
+                    f.TypeOffsets[type] = Vec(p.Value);
+                }
             if (e.TryGetProperty("present_offsets", out var po))
                 foreach (var p in po.EnumerateObject())
                 {
@@ -126,6 +143,17 @@ namespace LongLostCousins.Data
 
         public static CousinEntry Find(string id) => id == null ? null : Cousins.FirstOrDefault(c => c.Id == id);
 
+        /// <summary>The ids the mod may put in a select-screen slot: 100 to 199. None of them may ever reach the save.</summary>
+        public const int FirstScreenId = 100, LastScreenId = 199;
+        /// <summary>Page 4's free slots, as the player counts them (array indices 13 to 20).</summary>
+        public const int ScreenPage = 4, FirstFreeSlot = 14, LastFreeSlot = 21;
+
+        /// <summary>True for any id in the mod's range, whether or not a cousin uses it now: a stray one is the mod's all the same.</summary>
+        public static bool IsScreenId(int id) => id >= FirstScreenId && id <= LastScreenId;
+
+        /// <summary>The cousin whose select-screen id this is, or null.</summary>
+        public static CousinEntry ByScreenId(int id) => IsScreenId(id) ? Cousins.FirstOrDefault(c => c.ScreenId == id) : null;
+
         /// <summary>The model of a cousin's style, read once; null when it cannot be read (<see cref="ModelError"/> says why).</summary>
         public static LlcmModel Model(CousinEntry c, string style)
         {
@@ -178,9 +206,22 @@ namespace LongLostCousins.Data
                     if (e.TryGetProperty("fit", out var fit))
                         foreach (var s in fit.EnumerateObject()) c.Fits[s.Name] = StyleFit.Read(s.Value);
                     if (e.TryGetProperty("forever", out var fe))
-                        foreach (var s in fe.EnumerateObject()) c.Forever[s.Name] = ReadForever(s.Value);
+                        foreach (var s in fe.EnumerateObject())
+                        {
+                            // {"same_as": "burda"}: the same rig as that cousin's style of the same key (same joints,
+                            // same Forever clips), so the Forever-derived table is kept once.
+                            if (s.Value.TryGetProperty("same_as", out var sa))
+                            {
+                                var other = list.FirstOrDefault(o => o.Id == sa.GetString())
+                                            ?? throw new InvalidDataException($"{c.Id}: forever.{s.Name}.same_as names '{sa.GetString()}', which is not an earlier cousin");
+                                c.Forever[s.Name] = other.ForeverOf(s.Name)
+                                                    ?? throw new InvalidDataException($"{c.Id}: forever.{s.Name}.same_as: {other.Id} has no forever.{s.Name}");
+                            }
+                            else c.Forever[s.Name] = ReadForever(s.Value);
+                        }
                     if (string.IsNullOrEmpty(c.Id) || string.IsNullOrEmpty(c.Name) || c.Styles.Count == 0)
                         throw new InvalidDataException("a cousin needs an id, a name and at least one style");
+                    ReadScreen(c, e.GetProperty("screen"), list);
                     list.Add(c);
                 }
             }
@@ -189,6 +230,26 @@ namespace LongLostCousins.Data
                 Error = "cousins.json: " + e.Message;
             }
             return list;
+        }
+
+        /// <summary>
+        /// A cousin's "screen" block: {"id": 100 to 199, "page": 4, "slot": 14 to 21}, each id and slot used once. Anything
+        /// else stops cousins.json from loading, so no cousin can get an id the save might hold or a slot the game uses.
+        /// </summary>
+        private static void ReadScreen(CousinEntry c, JsonElement e, List<CousinEntry> earlier)
+        {
+            int id = e.GetProperty("id").GetInt32(), page = e.GetProperty("page").GetInt32(), slot = e.GetProperty("slot").GetInt32();
+            if (!IsScreenId(id)) throw new InvalidDataException($"{c.Id}: screen id {id} is outside {FirstScreenId} to {LastScreenId}");
+            if (page != ScreenPage || slot < FirstFreeSlot || slot > LastFreeSlot)
+                throw new InvalidDataException($"{c.Id}: screen page {page} slot {slot} is not one of page {ScreenPage}'s free slots ({FirstFreeSlot} to {LastFreeSlot})");
+            foreach (var o in earlier)
+            {
+                if (o.ScreenId == id) throw new InvalidDataException($"{c.Id}: screen id {id} is {o.Id}'s too");
+                if (o.ScreenSlot == slot - 1) throw new InvalidDataException($"{c.Id}: screen slot {slot} is {o.Id}'s too");
+            }
+            c.ScreenId = id;
+            c.ScreenWindow = page - 1;
+            c.ScreenSlot = slot - 1;
         }
 
         /// <summary>

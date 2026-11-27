@@ -4,6 +4,7 @@ using System.Linq;
 using Il2Cpp;
 using Il2CppApp.KatamariSin;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
+using LongLostCousins.Data;
 using LongLostCousins.Dressing;
 using LongLostCousins.Select;
 using OUAKModAPI;
@@ -177,7 +178,7 @@ namespace LongLostCousins.Test
                           g._nowCharacterID == _start1D4 || (PrinceBase.Zeroed && g._nowCharacterID == 0),
                           $"start {_start1D4}, end {g._nowCharacterID}, the mod's 0 held {PrinceBase.Zeroed}");
             }
-            Check("probe: neither the save nor GlobalManager holds 100", (save == null || save._selectPlayerId != SelectScreen.ModId) && (g == null || g._nowCharacterID != SelectScreen.ModId),
+            Check("probe: neither the save nor GlobalManager holds a mod id", (save == null || !Catalog.IsScreenId(save._selectPlayerId)) && (g == null || !Catalog.IsScreenId(g._nowCharacterID)),
                   $"save {(save != null ? save._selectPlayerId : -1)}, _nowCharacterID {(g != null ? g._nowCharacterID : -1)}");
             Safe("animator summaries", AnimSummaries);
         }

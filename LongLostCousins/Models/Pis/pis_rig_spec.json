@@ -1,0 +1,215 @@
+{
+ "units": "Blender world metres, Z up, -Y forward",
+ "new_style": {
+  "note": "Pis's joints: the .llcm's, with the arms, head, mouth and nose moved by new_style/fix_pis_new.py",
+  "joints": {
+   "JNT_root": {
+    "head": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "parent": null,
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_waist": {
+    "head": [
+     0.0,
+     0.0,
+     0.26345
+    ],
+    "parent": "JNT_root",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_leg_L": {
+    "head": [
+     0.06163,
+     -0.0,
+     0.26345
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_knee_L": {
+    "head": [
+     0.06163,
+     -5e-05,
+     0.15756
+    ],
+    "parent": "JNT_leg_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_ankle_L": {
+    "head": [
+     0.06163,
+     0.0,
+     0.05912
+    ],
+    "parent": "JNT_knee_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_leg_R": {
+    "head": [
+     -0.06163,
+     0.0,
+     0.26345
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_knee_R": {
+    "head": [
+     -0.06163,
+     -5e-05,
+     0.15756
+    ],
+    "parent": "JNT_leg_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_ankle_R": {
+    "head": [
+     -0.06163,
+     0.0,
+     0.05912
+    ],
+    "parent": "JNT_knee_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_spine_01": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.38043
+    ],
+    "parent": "JNT_waist",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_spine_02": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.48703
+    ],
+    "parent": "JNT_spine_01",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_shoulder_L": {
+    "head": [
+     0.26,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_spine_02",
+    "source": "moved by new_style/fix_pis_new.py: just inside the body's top outer corner"
+   },
+   "JNT_arm_L": {
+    "head": [
+     0.29,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_shoulder_L",
+    "source": "moved by new_style/fix_pis_new.py: just outside the body's top outer corner, the rod's root"
+   },
+   "JNT_elbow_L": {
+    "head": [
+     0.35,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_arm_L",
+    "source": "moved by new_style/fix_pis_new.py: half way along the shortened rod"
+   },
+   "JNT_hand_L": {
+    "head": [
+     0.43,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_elbow_L",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_shoulder_R": {
+    "head": [
+     -0.26,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_spine_02",
+    "source": "moved by new_style/fix_pis_new.py: just inside the body's top outer corner"
+   },
+   "JNT_arm_R": {
+    "head": [
+     -0.29,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_shoulder_R",
+    "source": "moved by new_style/fix_pis_new.py: just outside the body's top outer corner, the rod's root"
+   },
+   "JNT_elbow_R": {
+    "head": [
+     -0.35,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_arm_R",
+    "source": "moved by new_style/fix_pis_new.py: half way along the shortened rod"
+   },
+   "JNT_hand_R": {
+    "head": [
+     -0.43,
+     0.0,
+     0.76
+    ],
+    "parent": "JNT_elbow_R",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_neck": {
+    "head": [
+     -0.0,
+     -0.0,
+     0.63384
+    ],
+    "parent": "JNT_spine_02",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   },
+   "JNT_head": {
+    "head": [
+     0.0,
+     0.0,
+     0.77
+    ],
+    "parent": "JNT_neck",
+    "source": "moved by new_style/fix_pis_new.py: 2 cm under the torso top, on the tab plug's axis"
+   },
+   "JNT_mouth": {
+    "head": [
+     0.0,
+     -0.0935,
+     0.815
+    ],
+    "parent": "JNT_head",
+    "source": "moved by new_style/fix_pis_new.py: 2.5 mm forward with the face plate"
+   },
+   "JNT_nose": {
+    "head": [
+     0.0,
+     -0.0935,
+     0.828
+    ],
+    "parent": "JNT_head",
+    "source": "moved by new_style/fix_pis_new.py: 2.5 mm forward with the face plate"
+   },
+   "JNT_antenna": {
+    "head": [
+     0.0,
+     0.0,
+     1.03917
+    ],
+    "parent": "JNT_head",
+    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+   }
+  }
+ }
+}
