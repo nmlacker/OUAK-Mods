@@ -1,14 +1,15 @@
 # Long Lost Cousins
 
-Long Lost Cousins lets you play Once Upon a KATAMARI as a cousin the game never shipped. It has four of them. Three
+Long Lost Cousins lets you play Once Upon a KATAMARI as a cousin the game never shipped. It has five of them. Four
 are cousins from the cancelled Katamari Damacy Online and one is a fan-made cousin:
 
 - Burda, the singer whose head is a sideways microphone (new and old style).
 - Circuit, a hooded figure with two pink-tipped horns, a shield-shaped face window and a green trace on their robe (new
   and old style).
 - Pis, a magenta jigsaw-puzzle piece with a blue stepped bottom and their face on the top tab (new style).
-- Pew, the fan-made "cousin with a gun" from 2017, whose head is a grey pistol with the face on the muzzle end (new
-  style).
+- Rouge, whose head is a metallic pink lipstick on a gold ring, her face in a square gold window under it (new style).
+- Pew, the fan-made "cousin with a gun" from 2017, whose head is a metallic grey pistol with the face sunk into the
+  muzzle end (new style).
 
 ## What does it do?
 
@@ -24,8 +25,8 @@ same body.
 ## How do I pick one?
 
 On the game's own select screen, The Prince & Cousins (on the Prince's Ship, in the Plaza and on OujiStar). They are on
-page 4, in the first free slots after the last cousin: Burda in slot 14, Circuit in slot 15, Pew in slot 16 and Pis in
-slot 17. All are found from the start. Pick one and confirm, and you are that cousin. Your save keeps the cousin you
+page 4, in the first free slots after the last cousin: Burda in slot 14, Circuit in slot 15, Pew in slot 16, Pis in
+slot 17 and Rouge in slot 18. All are found from the start. Pick one and confirm, and you are that cousin. Your save keeps the cousin you
 were. Pick another of the mod's cousins and you switch; pick any of the game's cousins there, your own one included,
 and the mod's cousin is off again.
 
@@ -34,7 +35,7 @@ You can also pick them in the Long Lost Cousins tab of the mod window. The choic
 - Off, the game's own cousin. This is the default.
 - Each cousin in the new style (OUAK): made like this game's cousins, with a face piece for each of the game's 23 face
   slots and their own eyes when your cousin whistles (Burda's singing eyes, Circuit's humming ones, Pew's aiming ones;
-  Pis whistles as the Prince does).
+  Pis and Rouge whistle as the Prince does).
 - Burda and Circuit in the old style (Katamari Forever): the look of the older games, with 11 drawn face cards.
 
 The tab also picks the style. Picked on the select screen, a cousin comes in the style last picked in the tab (the new
@@ -90,7 +91,7 @@ in the new style, 15.721 cm up and 2.103 cm back in the old. Face presents (glas
 antenna, so a hat that hides the Prince's antenna hides the horns too. In the old style the horns are part of the hood
 and always show.
 
-Pew and Pis have no offsets yet: a present hangs on their joint of the same name, wherever that joint is on their
+Pew, Pis and Rouge have no offsets yet: a present hangs on their joint of the same name, wherever that joint is on their
 body. Pew's head joint sits over the pistol's grip, so a hat sits there, not at the muzzle with the face.
 
 These values were worked out from the models (the top and front of the head against the Prince's) and have not been
@@ -157,8 +158,8 @@ your cousin, and the work each frame, exist only while one is worn.
 ## Why does the select screen never store them in the save?
 
 Because the save keeps your own cousin. The game's save only knows its own cousins, and about 62 places in the game read
-the saved cousin. Each of the mod's slots carries the mod's own id: 100 for Burda, 101 for Circuit, 102 for Pew and 103
-for Pis (the mod keeps 100 to 199 for its cousins). When you confirm one, the mod turns that slot into the cousin your
+the saved cousin. Each of the mod's slots carries the mod's own id: 100 for Burda, 101 for Circuit, 102 for Pew, 103
+for Pis and 104 for Rouge (the mod keeps 100 to 199 for its cousins). When you confirm one, the mod turns that slot into the cousin your
 save already holds (for a Cousin Creator cousin, the same designed cousin too) just before the game stores it, and puts
 the mod's id back right after. So the game stores what it had, and the save stays as it was.
 
@@ -181,8 +182,8 @@ the words in it and deletes it:
 - `slot N`: the save slot to load (the last one used when not given).
 - `stage`: also play As Large As Possible 1.
 - `results`: also finish that stage and check the results (this includes `stage`).
-- `as <id>`: the cousin to test, by its id in `Cousins/cousins.json` (`burda`, `circuit`, `pew` or `pis`; `burda` when
-  not given).
+- `as <id>`: the cousin to test, by its id in `Cousins/cousins.json` (`burda`, `circuit`, `pew`, `pis` or `rouge`; `burda`
+  when not given).
   The test lines call the tested cousin "her" whichever one it is.
 - `select`: start with nobody picked, and pick the cousin on the game's select screen on the ship (see below).
 - `switch`: with `select`, also pick another of the mod's cousins on the screen while the first is worn (see below).

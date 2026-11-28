@@ -1,0 +1,216 @@
+{
+ "units": "Blender metres, Z up, character faces -Y, +X is her left",
+ "units_in_ouak": "OUAK's numbers are centimetres: the Prince's waist rests at 26.345 under a node of scale 1, and his clips write it there. Rouge's waist rests at 25.0, so the exporter gives her a waist offset of -1.345 cm (FOLW). The FBX is in metres with every node at scale 1, so it needs a scale of 100 on import to match (unverified in Unity).",
+ "new_style": {
+  "note": "OUAK's 23 joint names and parents (OUJI01_D), every joint resting at identity, at Rouge's own positions read from the KDO art: her arms leave the case below her face window (0.44, the Prince's are at 0.588) and her head (the window, ring and lipstick) turns about the window's bottom edge.",
+  "joints": {
+   "JNT_root": {
+    "head": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "parent": null,
+    "source": "as the Prince"
+   },
+   "JNT_waist": {
+    "head": [
+     0.0,
+     0.0,
+     0.25
+    ],
+    "parent": "JNT_root",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: in the dress, above the hem (0.18)"
+   },
+   "JNT_leg_L": {
+    "head": [
+     0.062,
+     0.0,
+     0.25
+    ],
+    "parent": "JNT_waist",
+    "source": "the Prince's leg spacing, under the dress"
+   },
+   "JNT_knee_L": {
+    "head": [
+     0.062,
+     0.0,
+     0.14
+    ],
+    "parent": "JNT_leg_L",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: halfway down the tights"
+   },
+   "JNT_ankle_L": {
+    "head": [
+     0.062,
+     0.0,
+     0.045
+    ],
+    "parent": "JNT_knee_L",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: over the shoe"
+   },
+   "JNT_leg_R": {
+    "head": [
+     -0.062,
+     0.0,
+     0.25
+    ],
+    "parent": "JNT_waist",
+    "source": "mirror of JNT_leg_L"
+   },
+   "JNT_knee_R": {
+    "head": [
+     -0.062,
+     0.0,
+     0.14
+    ],
+    "parent": "JNT_leg_R",
+    "source": "mirror of JNT_knee_L"
+   },
+   "JNT_ankle_R": {
+    "head": [
+     -0.062,
+     0.0,
+     0.045
+    ],
+    "parent": "JNT_knee_R",
+    "source": "mirror of JNT_ankle_L"
+   },
+   "JNT_spine_01": {
+    "head": [
+     0.0,
+     0.0,
+     0.32
+    ],
+    "parent": "JNT_waist",
+    "source": "by eye: up the dress"
+   },
+   "JNT_spine_02": {
+    "head": [
+     0.0,
+     0.0,
+     0.4
+    ],
+    "parent": "JNT_spine_01",
+    "source": "by eye: where the dress meets the case"
+   },
+   "JNT_shoulder_L": {
+    "head": [
+     0.01062,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_spine_02",
+    "source": "the Prince's x; the arm line's height"
+   },
+   "JNT_arm_L": {
+    "head": [
+     0.115,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_shoulder_L",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: the arms leave the case between the dress and the face window"
+   },
+   "JNT_elbow_L": {
+    "head": [
+     0.2,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_arm_L",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: halfway along the short arm"
+   },
+   "JNT_hand_L": {
+    "head": [
+     0.28,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_elbow_L",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: at the hand"
+   },
+   "JNT_shoulder_R": {
+    "head": [
+     -0.01063,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_spine_02",
+    "source": "mirror of JNT_shoulder_L"
+   },
+   "JNT_arm_R": {
+    "head": [
+     -0.115,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_shoulder_R",
+    "source": "mirror of JNT_arm_L"
+   },
+   "JNT_elbow_R": {
+    "head": [
+     -0.2,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_arm_R",
+    "source": "mirror of JNT_elbow_L"
+   },
+   "JNT_hand_R": {
+    "head": [
+     -0.28,
+     0.0,
+     0.44
+    ],
+    "parent": "JNT_elbow_R",
+    "source": "mirror of JNT_hand_L"
+   },
+   "JNT_neck": {
+    "head": [
+     0.0,
+     0.0,
+     0.45
+    ],
+    "parent": "JNT_spine_02",
+    "source": "by eye: under the face window"
+   },
+   "JNT_head": {
+    "head": [
+     0.0,
+     0.0,
+     0.47
+    ],
+    "parent": "JNT_neck",
+    "source": "by eye: the face window's bottom edge; window, ring and lipstick turn about it"
+   },
+   "JNT_mouth": {
+    "head": [
+     0.0,
+     -0.1335,
+     0.515
+    ],
+    "parent": "JNT_head",
+    "source": "placed on the KDO art (a front view in a mirror) at 0.00182 m per pixel: the mouth on the face plate"
+   },
+   "JNT_nose": {
+    "head": [
+     0.0,
+     -0.1335,
+     0.54
+    ],
+    "parent": "JNT_head",
+    "source": "by eye: the middle of the face (Rouge has no nose piece)"
+   },
+   "JNT_antenna": {
+    "head": [
+     -0.0,
+     -0.066,
+     1.06137
+    ],
+    "parent": "JNT_head",
+    "source": "the Prince's antenna on the lipstick's slanted top, at its high corner over her face, its ball 0.126 above the top there"
+   }
+  }
+ }
+}

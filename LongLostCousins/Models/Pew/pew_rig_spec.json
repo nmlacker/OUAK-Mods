@@ -1,7 +1,8 @@
 {
- "units": "Blender world metres, Z up, -Y forward",
+ "units": "Blender metres, Z up, character faces -Y, +X is their left",
+ "units_in_ouak": "OUAK's numbers are centimetres: the Prince's waist rests at 26.345 under a node of scale 1, and his clips write it there. Pew's waist rests at 14.0, so the exporter gives them a waist offset of -12.345 cm (FOLW). The FBX is in metres with every node at scale 1, so it needs a scale of 100 on import to match (unverified in Unity).",
  "new_style": {
-  "note": "Pew's joints as the .llcm file has them",
+  "note": "OUAK's 23 joint names and parents (OUJI01_D), every joint resting at identity, at positions of Pew's own: the reference is a short pistol with tiny legs and short arms, which the Prince's joint positions cannot carry. The style study notes that OUAK accepts a cousin with its own joint positions under the same names (Kinoko's arm line is higher than the Prince's). Nobody has loaded this rig in the game yet.",
   "joints": {
    "JNT_root": {
     "head": [
@@ -10,7 +11,7 @@
      0.0
     ],
     "parent": null,
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "as the Prince"
    },
    "JNT_waist": {
     "head": [
@@ -19,7 +20,7 @@
      0.14
     ],
     "parent": "JNT_root",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: in the grip just above its bottom (0.115), where the legs leave it"
    },
    "JNT_leg_L": {
     "head": [
@@ -28,7 +29,7 @@
      0.14
     ],
     "parent": "JNT_waist",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: the legs' spacing in the three-quarter view, 23 px apart"
    },
    "JNT_knee_L": {
     "head": [
@@ -37,7 +38,7 @@
      0.085
     ],
     "parent": "JNT_leg_L",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: halfway down the 28 px of visible leg"
    },
    "JNT_ankle_L": {
     "head": [
@@ -46,7 +47,7 @@
      0.03
     ],
     "parent": "JNT_knee_L",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: over the foot"
    },
    "JNT_leg_R": {
     "head": [
@@ -55,7 +56,7 @@
      0.14
     ],
     "parent": "JNT_waist",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_leg_L"
    },
    "JNT_knee_R": {
     "head": [
@@ -64,7 +65,7 @@
      0.085
     ],
     "parent": "JNT_leg_R",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_knee_L"
    },
    "JNT_ankle_R": {
     "head": [
@@ -73,7 +74,7 @@
      0.03
     ],
     "parent": "JNT_knee_R",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_ankle_L"
    },
    "JNT_spine_01": {
     "head": [
@@ -82,7 +83,7 @@
      0.22
     ],
     "parent": "JNT_waist",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "by eye: spread up the grip as the Prince's spine joints are up his body"
    },
    "JNT_spine_02": {
     "head": [
@@ -91,7 +92,7 @@
      0.3
     ],
     "parent": "JNT_spine_01",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "by eye: spread up the grip"
    },
    "JNT_shoulder_L": {
     "head": [
@@ -100,7 +101,7 @@
      0.285
     ],
     "parent": "JNT_spine_02",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "the Prince's x; height of the arm line below"
    },
    "JNT_arm_L": {
     "head": [
@@ -109,7 +110,7 @@
      0.285
     ],
     "parent": "JNT_shoulder_L",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: where the arm leaves the grip side, 40 px under the slide"
    },
    "JNT_elbow_L": {
     "head": [
@@ -118,7 +119,7 @@
      0.285
     ],
     "parent": "JNT_arm_L",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: halfway along the 35 px arm"
    },
    "JNT_hand_L": {
     "head": [
@@ -127,7 +128,7 @@
      0.285
     ],
     "parent": "JNT_elbow_L",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: at the ball hand"
    },
    "JNT_shoulder_R": {
     "head": [
@@ -136,7 +137,7 @@
      0.285
     ],
     "parent": "JNT_spine_02",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_shoulder_L (the Prince's x)"
    },
    "JNT_arm_R": {
     "head": [
@@ -145,7 +146,7 @@
      0.285
     ],
     "parent": "JNT_shoulder_R",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_arm_L"
    },
    "JNT_elbow_R": {
     "head": [
@@ -154,7 +155,7 @@
      0.285
     ],
     "parent": "JNT_arm_R",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_elbow_L"
    },
    "JNT_hand_R": {
     "head": [
@@ -163,7 +164,7 @@
      0.285
     ],
     "parent": "JNT_elbow_R",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "mirror of JNT_hand_L"
    },
    "JNT_neck": {
     "head": [
@@ -172,7 +173,7 @@
      0.4
     ],
     "parent": "JNT_spine_02",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "by eye: in the grip under the slide"
    },
    "JNT_head": {
     "head": [
@@ -181,7 +182,7 @@
      0.615
     ],
     "parent": "JNT_neck",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "by eye: the slide turns about a point over the middle of the grip, at the slide's middle height"
    },
    "JNT_mouth": {
     "head": [
@@ -190,7 +191,7 @@
      0.524
     ],
     "parent": "JNT_head",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: the mouth's centre on the face plate"
    },
    "JNT_nose": {
     "head": [
@@ -199,7 +200,7 @@
      0.565
     ],
     "parent": "JNT_head",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "placed on the reference picture at 0.004 m per pixel: the nose's base on the face plate"
    },
    "JNT_antenna": {
     "head": [
@@ -208,7 +209,7 @@
      0.91061
     ],
     "parent": "JNT_head",
-    "source": "rebuilt by Tools/import_llcm.py from the SKEL chunk"
+    "source": "the Prince's antenna on Pew's slide: the ball's centre 0.126 above the slide top, as the Prince's is above his head top (1.015 against 0.889), over the front sight near the muzzle end (0.12 of the length from the front, from the reference)"
    }
   }
  }

@@ -1,5 +1,5 @@
 {
- "about": "Pew's face map, rebuilt by Tools/import_llcm.py from pew_new.llcm. file_show and file_hide are the file's own lists, kept to compare with a re-export.",
+ "about": "Pew's face map. OUAK's code shows a face by turning 23 objects on and off (its face component, MainGameOujiFace), one face group per motion row. Pew's new style has a piece for each of the 23 slots, named as the slot, plus their aiming eyes. There is no old style, so no Forever cards. The OUAK slots and groups are the same as in Burda's map. All mappings are mine; nobody has seen them in the game.",
  "blink": {
   "ouak": {
    "blinkEyeType": 2,
@@ -7,110 +7,155 @@
    "open_seconds": 3.0,
    "closed_seconds": 0.15
   },
-  "new_style": "eye_03_m for 0.15 s every 3 s on groups that blink",
-  "old_style": "none: this cousin has no old style"
+  "new_style": "eye_03_m for 0.15 s every 3.0 s on groups that blink"
  },
  "pew_new_pieces": {
-  "eye_01_m": "",
-  "eye_02_m": "",
-  "eye_03_m": "",
-  "eye_04_m": "",
-  "eye_05_m": "",
-  "face_01_m": "",
-  "face_02_m": "",
-  "face_03_m": "",
-  "mouth_01_m": "",
-  "mouth_02_m": "",
-  "mouth_03_m": "",
-  "mouth_04_m": "",
-  "mouth_05_m": "",
-  "mouth_06_m": "",
-  "mouth_07_m": "",
-  "mouth_08_m": "",
-  "mouth_09_m": "",
-  "mouth_10_m": "",
-  "mouth_11_m": "",
-  "angry_01_m": "",
-  "cheak_01_m": "",
-  "shock_01_m": "",
-  "tear_01_m": "",
-  "eye_aim_m": ""
+  "eye_01_m": "his usual eyes: the Prince's, grey almonds with their outer ends tilted up",
+  "eye_02_m": "half-closed eyes, the lids lowered",
+  "eye_03_m": "closed eyes, short sloping lines (the blink)",
+  "eye_04_m": "round dot eyes",
+  "eye_05_m": "white eyes with a thin black outline",
+  "eye_aim_m": "aiming: their right eye squeezed shut, the left one glaring (an extra)",
+  "face_01_m": "face plate, a rounded square",
+  "face_02_m": "face plate, blue-grey shade from the top edge",
+  "face_03_m": "face plate, red flush from the top edge",
+  "mouth_01_m": "his usual mouth: the Prince's small red box, darker along its top",
+  "mouth_02_m": "open, rounded square",
+  "mouth_03_m": "open, arched",
+  "mouth_04_m": "wide open grin",
+  "mouth_05_m": "big open oval",
+  "mouth_06_m": "small round mouth",
+  "mouth_07_m": "open with drool",
+  "mouth_08_m": "wavy closed line",
+  "mouth_09_m": "arched closed line",
+  "mouth_10_m": "puckered lips",
+  "mouth_11_m": "wavy open mouth with drool",
+  "angry_01_m": "anger mark, their left upper corner",
+  "cheak_01_m": "blush on both cheeks",
+  "shock_01_m": "gloom lines, their left upper corner",
+  "tear_01_m": "a tear streak under each eye"
  },
- "pew_old_cards": {},
  "ouak_slots": [
   {
-   "slot": "eye_01"
+   "slot": "eye_01",
+   "ouak_look": "open eyes",
+   "pew_piece": "eye_01_m"
   },
   {
-   "slot": "eye_02"
+   "slot": "eye_02",
+   "ouak_look": "half-closed eyes",
+   "pew_piece": "eye_02_m"
   },
   {
-   "slot": "eye_03"
+   "slot": "eye_03",
+   "ouak_look": "closed eyes (the blink)",
+   "pew_piece": "eye_03_m"
   },
   {
-   "slot": "eye_04"
+   "slot": "eye_04",
+   "ouak_look": "wide round eyes",
+   "pew_piece": "eye_04_m"
   },
   {
-   "slot": "eye_05"
+   "slot": "eye_05",
+   "ouak_look": "white eyes (no face group uses them)",
+   "pew_piece": "eye_05_m"
   },
   {
-   "slot": "face_01"
+   "slot": "face_01",
+   "ouak_look": "face plate",
+   "pew_piece": "face_01_m"
   },
   {
-   "slot": "face_02"
+   "slot": "face_02",
+   "ouak_look": "face plate, gloom shade",
+   "pew_piece": "face_02_m"
   },
   {
-   "slot": "face_03"
+   "slot": "face_03",
+   "ouak_look": "face plate, red flush",
+   "pew_piece": "face_03_m"
   },
   {
-   "slot": "mouth_01"
+   "slot": "mouth_01",
+   "ouak_look": "the usual mouth",
+   "pew_piece": "mouth_01_m"
   },
   {
-   "slot": "mouth_02"
+   "slot": "mouth_02",
+   "ouak_look": "open mouth, rounded square",
+   "pew_piece": "mouth_02_m"
   },
   {
-   "slot": "mouth_03"
+   "slot": "mouth_03",
+   "ouak_look": "open mouth, arched",
+   "pew_piece": "mouth_03_m"
   },
   {
-   "slot": "mouth_04"
+   "slot": "mouth_04",
+   "ouak_look": "wide open mouth",
+   "pew_piece": "mouth_04_m"
   },
   {
-   "slot": "mouth_05"
+   "slot": "mouth_05",
+   "ouak_look": "big round open mouth",
+   "pew_piece": "mouth_05_m"
   },
   {
-   "slot": "mouth_06"
+   "slot": "mouth_06",
+   "ouak_look": "small oval mouth",
+   "pew_piece": "mouth_06_m"
   },
   {
-   "slot": "mouth_07"
+   "slot": "mouth_07",
+   "ouak_look": "open mouth with drool",
+   "pew_piece": "mouth_07_m"
   },
   {
-   "slot": "mouth_08"
+   "slot": "mouth_08",
+   "ouak_look": "wavy closed line",
+   "pew_piece": "mouth_08_m"
   },
   {
-   "slot": "mouth_09"
+   "slot": "mouth_09",
+   "ouak_look": "arched closed line",
+   "pew_piece": "mouth_09_m"
   },
   {
-   "slot": "mouth_10"
+   "slot": "mouth_10",
+   "ouak_look": "puckered lips",
+   "pew_piece": "mouth_10_m"
   },
   {
-   "slot": "mouth_11"
+   "slot": "mouth_11",
+   "ouak_look": "wavy open mouth with drool",
+   "pew_piece": "mouth_11_m"
   },
   {
-   "slot": "angry_01"
+   "slot": "angry_01",
+   "ouak_look": "anger mark",
+   "pew_piece": "angry_01_m"
   },
   {
-   "slot": "cheak_01"
+   "slot": "cheak_01",
+   "ouak_look": "blush",
+   "pew_piece": "cheak_01_m"
   },
   {
-   "slot": "shock_01"
+   "slot": "shock_01",
+   "ouak_look": "gloom lines",
+   "pew_piece": "shock_01_m"
   },
   {
-   "slot": "tear_01"
+   "slot": "tear_01",
+   "ouak_look": "tears",
+   "pew_piece": "tear_01_m"
   }
  ],
  "ouak_groups": [
   {
    "group": 0,
+   "gloss": "normal",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -118,17 +163,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 52,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_01_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 1,
+   "gloss": "rolling",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -136,17 +181,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 12,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_02_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 2,
+   "gloss": "photo/camera",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -154,17 +199,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 3,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_04_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 3,
+   "gloss": "dash start",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -172,17 +217,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 2,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_05_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 4,
+   "gloss": "turning",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -190,17 +235,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 4,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_09_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 5,
+   "gloss": "climbing a step",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -208,17 +253,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 6,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_08_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 6,
+   "gloss": "dizzy",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -226,17 +271,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 2,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_10_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 7,
+   "gloss": "squat",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -244,17 +289,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 0,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_02_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 8,
+   "gloss": "looking around",
    "ouak": {
     "face": "face_01",
     "eye": "eye_04",
@@ -262,17 +307,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 3,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_04_m",
     "mouth": "mouth_06_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 9,
+   "gloss": "thrashing",
    "ouak": {
     "face": "face_01",
     "eye": "eye_04",
@@ -280,17 +325,17 @@
     "overlay": "angry_01"
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_04_m",
     "mouth": "mouth_05_m",
     "overlay": "angry_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 10,
+   "gloss": "joy",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -298,17 +343,17 @@
     "overlay": "cheak_01"
    },
    "blinks": true,
+   "used_by_rows": 5,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_04_m",
     "overlay": "cheak_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 11,
+   "gloss": "power release",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -316,17 +361,17 @@
     "overlay": "cheak_01"
    },
    "blinks": false,
+   "used_by_rows": 0,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_04_m",
     "overlay": "cheak_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 12,
+   "gloss": "tired",
    "ouak": {
     "face": "face_02",
     "eye": "eye_02",
@@ -334,17 +379,17 @@
     "overlay": "shock_01"
    },
    "blinks": false,
+   "used_by_rows": 2,
    "new_style": {
     "face": "face_02_m",
     "eye": "eye_02_m",
     "mouth": "mouth_03_m",
     "overlay": "shock_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 13,
+   "gloss": "slumped",
    "ouak": {
     "face": "face_02",
     "eye": "eye_04",
@@ -352,17 +397,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_02_m",
     "eye": "eye_04_m",
     "mouth": "mouth_02_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 14,
+   "gloss": "hanging head",
    "ouak": {
     "face": "face_02",
     "eye": "eye_04",
@@ -370,17 +415,17 @@
     "overlay": "tear_01"
    },
    "blinks": false,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_02_m",
     "eye": "eye_04_m",
     "mouth": "mouth_02_m",
     "overlay": "tear_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 15,
+   "gloss": "surprise",
    "ouak": {
     "face": "face_03",
     "eye": "eye_04",
@@ -388,17 +433,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 2,
    "new_style": {
     "face": "face_03_m",
     "eye": "eye_04_m",
     "mouth": "mouth_05_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 16,
+   "gloss": "frustrated",
    "ouak": {
     "face": "face_03",
     "eye": "eye_02",
@@ -406,17 +451,17 @@
     "overlay": "angry_01"
    },
    "blinks": false,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_03_m",
     "eye": "eye_02_m",
     "mouth": "mouth_08_m",
     "overlay": "angry_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 17,
+   "gloss": "hit by the washbasin",
    "ouak": {
     "face": "face_03",
     "eye": "eye_02",
@@ -424,17 +469,17 @@
     "overlay": "tear_01"
    },
    "blinks": false,
+   "used_by_rows": 0,
    "new_style": {
     "face": "face_03_m",
     "eye": "eye_02_m",
     "mouth": "mouth_03_m",
     "overlay": "tear_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 18,
+   "gloss": "miracle eye",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -442,17 +487,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 2,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_09_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 19,
+   "gloss": "pouting",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -460,17 +505,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_08_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 20,
+   "gloss": "eyes and mouth closed",
    "ouak": {
     "face": "face_01",
     "eye": "eye_03",
@@ -478,17 +523,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 3,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_03_m",
     "mouth": "mouth_09_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 21,
+   "gloss": "drool",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -496,17 +541,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_11_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 22,
+   "gloss": "dozing with drool",
    "ouak": {
     "face": "face_01",
     "eye": "eye_03",
@@ -514,17 +559,17 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_03_m",
     "mouth": "mouth_07_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 23,
+   "gloss": "exasperated",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -532,17 +577,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_03_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 24,
+   "gloss": "expressionless",
    "ouak": {
     "face": "face_01",
     "eye": "eye_02",
@@ -550,17 +595,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_02_m",
     "mouth": "mouth_06_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 25,
+   "gloss": "straining",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -568,17 +613,17 @@
     "overlay": null
    },
    "blinks": true,
+   "used_by_rows": 1,
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_01_m",
     "mouth": "mouth_08_m",
     "overlay": null
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   },
   {
    "group": 26,
+   "gloss": "whistling",
    "ouak": {
     "face": "face_01",
     "eye": "eye_01",
@@ -586,22 +631,18 @@
     "overlay": null
    },
    "blinks": false,
+   "used_by_rows": 1,
+   "note": "my default: Pew takes aim where the Prince whistles, one eye shut; the shut eye does not blink, so the group does not either. The mouth stays the game's pucker.",
    "new_style": {
     "face": "face_01_m",
     "eye": "eye_aim_m",
     "mouth": "mouth_10_m",
     "overlay": null
-   },
-   "file_show": [
-    "eye_aim_m"
-   ],
-   "file_hide": [
-    "eye_01_m",
-    "eye_03_m"
-   ]
+   }
   },
   {
    "group": 27,
+   "gloss": "bitter face",
    "ouak": {
     "face": "face_02",
     "eye": "eye_02",
@@ -609,14 +650,14 @@
     "overlay": "shock_01"
    },
    "blinks": false,
+   "used_by_rows": 0,
    "new_style": {
     "face": "face_02_m",
     "eye": "eye_02_m",
     "mouth": "mouth_10_m",
     "overlay": "shock_01_m"
-   },
-   "file_show": [],
-   "file_hide": []
+   }
   }
- ]
+ ],
+ "note_on_names": "Each new-style piece is named as the OUAK slot it fills, so a mod can switch their pieces by OUAK's own names. eye_aim_m is their extra; it shows only where this map says so (group 26)."
 }
