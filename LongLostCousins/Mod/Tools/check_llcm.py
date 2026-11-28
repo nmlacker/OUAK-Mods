@@ -44,16 +44,17 @@ TOL_UV = 1e-6
 # The design's waist offsets (FOLW), cm: by style, unless the cousin's design has its own (Pew's waist rests 12.345 cm
 # lower than the Prince's).
 DESIGN_FOLLOW = {'new': (0.0, 0.0, 0.0), 'old': (0.0, 7.415, 0.0)}
-DESIGN_FOLLOW_COUSIN = {('pew', 'new'): (0.0, -12.345, 0.0)}
+DESIGN_FOLLOW_COUSIN = {('pew', 'new'): (0.0, -12.345, 0.0), ('rouge', 'new'): (0.0, 2.79136364, 0.0)}
 # The rig spec that holds the OUAK Prince's measured joints (OUJI01_D): the FOLW offset is her waist minus his.
 PRINCE_RIG_SPEC = 'Models/Burda/burda_rig_spec.json'
 # Each design's group-26 override for the new style: Burda sings and Circuit hums where the Prince whistles, Pew aims;
-# Pis has none.
+# Pis and Rouge have none.
 DESIGN_GROUP26 = {
     'burda': {'show': {'eye_sing_m', 'mouth_05_m'}, 'hide': {'eye_01_m', 'eye_03_m', 'mouth_10_m'}},
     'circuit': {'show': {'eye_hum_m', 'mouth_05_m'}, 'hide': {'eye_01_m', 'eye_03_m', 'mouth_10_m'}},
     'pew': {'show': {'eye_aim_m'}, 'hide': {'eye_01_m', 'eye_03_m'}},
     'pis': {'show': set(), 'hide': set()},
+    'rouge': {'show': set(), 'hide': set()},
 }
 # Counts and volumes the research measured on the .blend files (burda_data_and_units.md), as an outside cross-check.
 RESEARCH = {

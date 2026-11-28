@@ -125,7 +125,7 @@
    "style_names": {
     "new": "new style (OUAK)"
    },
-   "notes": "The fan-made 'cousin with a gun' (2017): the Prince's head as a grey pistol, the face on the muzzle end, with a black border round it as Pis has a yellow one. OUAK's 23 joint names at Pew's own positions, resting at identity; the waist rests 12.345 cm lower than the Prince's. A piece for each of OUAK's 23 face slots plus their aiming eyes.",
+   "notes": "The fan-made 'cousin with a gun' (2017): the Prince's head as a pistol, painted metallic grey with near-black panel lines, the face on the muzzle end sunk an inch and a half into it behind a thick black square ring. He wears the Prince's face (grey almond eyes, an orange triangle nose, a small red mouth). OUAK's 23 joint names at Pew's own positions, resting at identity; the waist rests 12.345 cm lower than the Prince's. A piece for each of OUAK's 23 face slots plus their aiming eyes.",
    "fit": {
     "new": {
      "notes": "First guesses from the model, not measured in the game. Presents on the head joint sit over the grip; the slide reaches 0.70 m forward of it.",
@@ -177,6 +177,41 @@
     },
     "face_map": "Models/Pis/face_map.json",
     "rig_spec": "Models/Pis/pis_rig_spec.json",
+    "rig_spec_block": {
+     "new": "new_style"
+    }
+   }
+  },
+  {
+   "id": "rouge",
+   "name": "Rouge",
+   "screen": { "id": 104, "page": 4, "slot": 18 },
+   "styles": {
+    "new": "Rouge/rouge_new.llcm"
+   },
+   "icons": {
+    "new": "Rouge/rouge_icon_new.png"
+   },
+   "style_names": {
+    "new": "new style (OUAK)"
+   },
+   "notes": "Cousin of the cancelled Katamari Damacy Online, named for her lipstick-shaped head: a metallic pink lipstick with a slanted top, its high corner over her face with the antenna on it, a darker pink band over a metallic gold ring, over a brown head of hair. Her face is in a square gold window under the ring, with her hair laid out as the art shows it, and she wears the Prince's face. Below a narrower neck her dress is patterned as the art's back view (a brown upper body, a hot-pink side with a darker stripe, curved medium- and light-pink stripes) with a gold hem; really short brown sleeves with gold cuffs. Taller and skinnier than the art. OUAK's 23 joint names at her own positions, resting at identity; her waist rests 2.79 cm higher than the Prince's. A piece for each of OUAK's 23 face slots.",
+   "fit": {
+    "new": {
+     "notes": "First guesses from the model, not measured in the game. Her head joint is under her face window, so presents on the head ride on the lipstick.",
+     "joint_offsets": {},
+     "present_offsets": {},
+     "cannot_wear": [],
+     "hud_scale": 1.0,
+     "hud_offset": [0, 0, 0]
+    }
+   },
+   "build": {
+    "blend": {
+     "new": "Models/Rouge/new_style/Rouge_new.blend"
+    },
+    "face_map": "Models/Rouge/face_map.json",
+    "rig_spec": "Models/Rouge/rouge_rig_spec.json",
     "rig_spec_block": {
      "new": "new_style"
     }
